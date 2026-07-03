@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name">R1999 Tracker Grabber</string>
     <string name="title">Summon Link Grabber</string>
-    <string name="start">Start capture</string>
-    <string name="stop">Stop capture</string>
+    <string name="start">Manual proxy capture</string>
+    <string name="stop">Stop manual capture</string>
+    <string name="start_vpn">Start VPN capture (one tap)</string>
+    <string name="stop_vpn">Stop VPN capture</string>
     <string name="copy">Copy link</string>
     <string name="open_tracker">Open tracker</string>
     <string name="status_idle">Stopped</string>

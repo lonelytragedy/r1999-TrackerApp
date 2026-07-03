@@ -41,9 +41,17 @@
             android:paddingBottom="8dp" />
 
         <Button
-            android:id="@+id/toggleBtn"
+            android:id="@+id/vpnBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="@string/start_vpn" />
+
+        <Button
+            android:id="@+id/toggleBtn"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:text="@string/start" />
 
         <TextView

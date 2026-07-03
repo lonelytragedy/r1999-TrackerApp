@@ -6,12 +6,29 @@ The game does not validate the server certificate, so no root and no trusted CA 
 
 ## Usage
 
-1. Install the APK (from the Actions artifact or a release).
-2. Open the app, start the capture.
-3. In Android Wi-Fi settings, set a Manual proxy for your current network to the host and port shown in the app.
-4. Launch Reverse:1999 and open Summon → Record.
-5. The link is captured, copied to the clipboard, and shown in the app. Use "Open tracker" and paste it.
-6. Turn the Wi-Fi proxy back off when done.
+There are two capture modes. In both, log in to the game first (the game
+rejects the interception certificate only during login), then start the
+capture and open Summon → Record.
+
+### VPN capture (one tap, recommended)
+
+1. Install the APK.
+2. Log in to the game.
+3. Tap "Start VPN capture" and allow the VPN request once.
+4. Open Summon → Record. The link is captured, copied to the clipboard, and shown.
+5. Tap "Open tracker", paste the link, then stop the VPN.
+
+### Manual proxy capture
+
+1. Tap "Manual proxy capture".
+2. In Android Wi-Fi settings, set a Manual proxy for your network to the host and port shown in the app.
+3. Open Summon → Record.
+4. Turn the Wi-Fi proxy back off when done.
+
+## License
+
+GPLv3 (see LICENSE). The VPN mode embeds the tun2http native engine from
+TunProxy / NetGuard — see NOTICE.md for attribution.
 
 ## Build
 
