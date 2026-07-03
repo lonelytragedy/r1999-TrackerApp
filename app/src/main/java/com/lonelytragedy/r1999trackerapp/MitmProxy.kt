@@ -89,6 +89,12 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         out.write("HTTP/1.1 200 Connection Established\r\n\r\n".toByteArray())
         out.flush()
 
+        if (!shouldMitm(host)) {
+            tunnel(client, input, host, targetPort)
+            return
+        }
+        Bus.logLine("MITM $host")
+
         val clientTls = serverFactory.createSocket(client, host, targetPort, true) as SSLSocket
         clientTls.useClientMode = false
         try {
@@ -183,6 +189,26 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
             capture("https://$host${parts[1]}")
         }
         window.setLength(0)
+    }
+
+    private fun shouldMitm(host: String): Boolean {
+        return host.contains("sl916.com")
+    }
+
+    private fun tunnel(client: Socket, input: InputStream, host: String, port: Int) {
+        val real = try {
+            Socket(host, port)
+        } catch (e: Exception) {
+            Bus.logLine("tunnel connect $host failed: ${e.message ?: ""}")
+            return
+        }
+        val up = Thread { pipe(input, real.getOutputStream()) }
+        val down = Thread { pipe(real.getInputStream(), client.getOutputStream()) }
+        up.start()
+        down.start()
+        up.join()
+        down.join()
+        close(real)
     }
 
     private fun capture(url: String) {
