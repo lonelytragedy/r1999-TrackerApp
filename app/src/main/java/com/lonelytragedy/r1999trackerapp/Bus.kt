@@ -10,6 +10,9 @@ object Bus {
     var running = false
 
     @Volatile
+    var vpnRunning = false
+
+    @Volatile
     var lastUrl: String? = null
 
     @Volatile
