@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.10.2)
 
+add_compile_options(
+        -Wno-implicit-function-declaration
+        -Wno-error=implicit-function-declaration
+        -Wno-error=int-conversion
+        -Wno-error=implicit-int)
+
 add_library(
         tun2http
         SHARED
