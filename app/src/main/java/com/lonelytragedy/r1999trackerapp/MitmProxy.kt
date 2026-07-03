@@ -16,6 +16,7 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
     private var running = false
     private var server: ServerSocket? = null
     private val pool = Executors.newCachedThreadPool()
+    private lateinit var serverFactory: SSLSocketFactory
 
     fun start() {
         val ctx = CertFactory.serverContext()
@@ -25,6 +26,7 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         s.bind(InetSocketAddress("0.0.0.0", port))
         server = s
         running = true
+        Bus.logLine("Proxy listening on 0.0.0.0:$port")
         pool.execute { acceptLoop() }
     }
 
@@ -35,9 +37,8 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         } catch (_: Exception) {
         }
         pool.shutdownNow()
+        Bus.logLine("Proxy stopped")
     }
-
-    private lateinit var serverFactory: javax.net.ssl.SSLSocketFactory
 
     private fun acceptLoop() {
         val srv = server ?: return
@@ -59,11 +60,14 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
             val parts = requestLine.split(" ")
             if (parts.size < 2) return
             if (parts[0].equals("CONNECT", true)) {
+                Bus.logLine("CONNECT ${parts[1]}")
                 handleConnect(client, input, parts[1])
             } else {
+                Bus.logLine("${parts[0]} ${parts[1]}")
                 handlePlain(client, input, parts)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Bus.logLine("err: ${e.javaClass.simpleName} ${e.message ?: ""}")
         } finally {
             try {
                 client.close()
@@ -87,11 +91,22 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
 
         val clientTls = serverFactory.createSocket(client, host, targetPort, true) as SSLSocket
         clientTls.useClientMode = false
-        clientTls.startHandshake()
+        try {
+            clientTls.startHandshake()
+        } catch (e: Exception) {
+            Bus.logLine("TLS handshake with app failed for $host: ${e.message ?: ""}")
+            return
+        }
 
-        val real = (SSLSocketFactory.getDefault() as SSLSocketFactory)
-            .createSocket(host, targetPort) as SSLSocket
-        real.startHandshake()
+        val real = try {
+            val r = (SSLSocketFactory.getDefault() as SSLSocketFactory)
+                .createSocket(host, targetPort) as SSLSocket
+            r.startHandshake()
+            r
+        } catch (e: Exception) {
+            Bus.logLine("upstream TLS to $host failed: ${e.message ?: ""}")
+            return
+        }
 
         val up = Thread { scanPipe(clientTls.inputStream, real.getOutputStream(), host) }
         val down = Thread { pipe(real.inputStream, clientTls.getOutputStream()) }
@@ -112,7 +127,7 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         val host = hostPort.substringBefore(":")
         val targetPort = hostPort.substringAfter(":", "80").toIntOrNull() ?: 80
         val path = "/" + body.substringAfter("/", "")
-        if (path.contains("query/summon")) onUrl("http://$host$path")
+        if (path.contains("query/summon")) capture("http://$host$path")
 
         val headers = ArrayList<String>()
         while (true) {
@@ -165,9 +180,14 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         val line = window.substring(lineStart, lineEnd).trim()
         val parts = line.split(" ")
         if (parts.size >= 2 && parts[1].startsWith("/")) {
-            onUrl("https://$host${parts[1]}")
+            capture("https://$host${parts[1]}")
         }
         window.setLength(0)
+    }
+
+    private fun capture(url: String) {
+        Bus.logLine("FOUND summon link")
+        onUrl(url)
     }
 
     private fun pipe(from: InputStream, to: OutputStream) {

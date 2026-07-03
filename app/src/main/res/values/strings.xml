@@ -14,4 +14,6 @@
     <string name="notif_waiting">Waiting for the summon link…</string>
     <string name="notif_found">Summon link captured</string>
     <string name="copied">Copied to clipboard</string>
+    <string name="log_title">Log</string>
+    <string name="clear_log">Clear</string>
 </resources>

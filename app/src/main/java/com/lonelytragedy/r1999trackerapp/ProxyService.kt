@@ -38,6 +38,7 @@ class ProxyService : Service() {
                 Bus.running = true
                 Bus.emitState()
             } catch (e: Exception) {
+                Bus.logLine("START FAILED: ${e.javaClass.simpleName} ${e.message ?: ""}")
                 Bus.running = false
                 Bus.emitState()
                 stopSelf()

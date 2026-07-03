@@ -23,6 +23,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var toggleBtn: Button
     private lateinit var copyBtn: Button
     private lateinit var openBtn: Button
+    private lateinit var clearBtn: Button
+    private lateinit var logView: TextView
 
     private val notifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -37,15 +39,20 @@ class MainActivity : AppCompatActivity() {
         toggleBtn = findViewById(R.id.toggleBtn)
         copyBtn = findViewById(R.id.copyBtn)
         openBtn = findViewById(R.id.openBtn)
+        clearBtn = findViewById(R.id.clearBtn)
+        logView = findViewById(R.id.logView)
 
         proxyInfo.text = getString(R.string.proxy_hint, NetUtil.wifiIp(), ProxyService.PORT)
 
         toggleBtn.setOnClickListener { toggle() }
         copyBtn.setOnClickListener { copyLink() }
         openBtn.setOnClickListener { openTracker() }
+        clearBtn.setOnClickListener { Bus.clear() }
 
         Bus.listener = { url -> runOnUiThread { showUrl(url) } }
         Bus.stateListener = { runOnUiThread { refreshState() } }
+        Bus.logListener = { runOnUiThread { logView.text = Bus.snapshot() } }
+        logView.text = Bus.snapshot()
 
         maybeRequestNotifications()
         refreshState()
