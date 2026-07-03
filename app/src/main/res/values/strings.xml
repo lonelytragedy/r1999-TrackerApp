@@ -1,16 +1,30 @@
 <resources>
-    <string name="app_name">R1999 Tracker Grabber</string>
-    <string name="title">Summon Link Grabber</string>
-    <string name="start">Manual proxy capture</string>
-    <string name="stop">Stop manual capture</string>
-    <string name="start_vpn">Start VPN capture (one tap)</string>
+    <string name="app_name">Tracker App</string>
+
+    <string name="tab_tracker">Tracker</string>
+    <string name="tab_grabber">Link grabber</string>
+
+    <string name="sub_vpn">VPN</string>
+    <string name="sub_proxy">Proxy</string>
+
+    <string name="web_loading">Loading tracker…</string>
+    <string name="web_offline_title">No internet connection</string>
+    <string name="web_offline_msg">Connect to the internet to open the tracker.</string>
+    <string name="web_retry">Retry</string>
+
+    <string name="grabber_title">Summon Link Grabber</string>
+    <string name="vpn_hint">Log in to the game first (the game rejects the certificate only during login). Then tap Start VPN and, when asked, allow the VPN once. Open Summon → Record — the link is captured and copied. If it does not catch, re-open the history a couple of times.</string>
+    <string name="proxy_hint">Log in to the game first. Then tap Start, set a Manual Wi-Fi proxy to %1$s : %2$d, and open Summon → Record. Turn the proxy off in Wi-Fi settings when done.</string>
+
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="start_vpn">Start VPN capture</string>
     <string name="stop_vpn">Stop VPN capture</string>
     <string name="copy">Copy link</string>
-    <string name="open_tracker">Open tracker</string>
+    <string name="open_tracker">Open in tracker</string>
     <string name="status_idle">Stopped</string>
     <string name="status_waiting">Capturing… open Summon → Record in the game</string>
     <string name="status_found">Link captured and copied</string>
-    <string name="proxy_hint">1. Wi-Fi settings → your network → Proxy → Manual\n2. Host: %1$s   Port: %2$d\n3. Start capture below, then open Summon → Record in the game\n4. Turn the proxy off in Wi-Fi settings when done</string>
     <string name="no_link">No link yet</string>
     <string name="notif_channel">Capture</string>
     <string name="notif_waiting">Waiting for the summon link…</string>
