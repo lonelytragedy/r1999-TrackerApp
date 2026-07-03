@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">R1999 Tracker Grabber</string>
+    <string name="title">Summon Link Grabber</string>
+    <string name="start">Start capture</string>
+    <string name="stop">Stop capture</string>
+    <string name="copy">Copy link</string>
+    <string name="open_tracker">Open tracker</string>
+    <string name="status_idle">Stopped</string>
+    <string name="status_waiting">Capturing… open Summon → Record in the game</string>
+    <string name="status_found">Link captured and copied</string>
+    <string name="proxy_hint">1. Wi-Fi settings → your network → Proxy → Manual\n2. Host: %1$s   Port: %2$d\n3. Start capture below, then open Summon → Record in the game\n4. Turn the proxy off in Wi-Fi settings when done</string>
+    <string name="no_link">No link yet</string>
+    <string name="notif_channel">Capture</string>
+    <string name="notif_waiting">Waiting for the summon link…</string>
+    <string name="notif_found">Summon link captured</string>
+    <string name="copied">Copied to clipboard</string>
+</resources>
