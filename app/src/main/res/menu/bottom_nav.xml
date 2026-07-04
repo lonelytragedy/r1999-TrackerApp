@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navTracker"
+        android:icon="@drawable/ic_tab_tracker"
+        android:title="@string/tab_tracker" />
+    <item
+        android:id="@+id/navGrabber"
+        android:icon="@drawable/ic_tab_grabber"
+        android:title="@string/tab_grabber" />
+</menu>
