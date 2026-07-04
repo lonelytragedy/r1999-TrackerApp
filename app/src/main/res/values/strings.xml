@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Tracker App</string>
+    <string name="app_name">Reverse: Tracker</string>
 
     <string name="tab_tracker">Tracker</string>
     <string name="tab_grabber">Link grabber</string>

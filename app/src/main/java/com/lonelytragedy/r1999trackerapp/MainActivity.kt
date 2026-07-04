@@ -67,6 +67,8 @@ class MainActivity : AppCompatActivity() {
     private var pageErrored = false
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
+    private val drivePrefs by lazy { getSharedPreferences("drive", MODE_PRIVATE) }
+
     private val fileChooser =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val cb = filePathCallback ?: return@registerForActivityResult
@@ -150,8 +152,14 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Drive sign-in failed", Toast.LENGTH_LONG).show()
             return
         }
+        drivePrefs.edit().putString("refresh", refresh).apply()
         val js = "window.__driveConnected && window.__driveConnected(${JSONObject.quote(refresh)})"
         webview.post { webview.evaluateJavascript(js, null) }
+    }
+
+    private fun restoreDrive() {
+        val rt = drivePrefs.getString("refresh", null) ?: return
+        webview.evaluateJavascript("window.__driveRestore && window.__driveRestore(${JSONObject.quote(rt)})", null)
     }
 
     private fun bindViews() {
@@ -219,7 +227,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onPageFinished(view: WebView, url: String) {
-                if (!pageErrored) webOverlay.visibility = View.GONE
+                if (!pageErrored) {
+                    webOverlay.visibility = View.GONE
+                    restoreDrive()
+                }
             }
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
@@ -403,6 +414,11 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$workerBase/oauth/start")))
                 }
             }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun disconnectDrive() {
+            drivePrefs.edit().remove("refresh").apply()
         }
     }
 
