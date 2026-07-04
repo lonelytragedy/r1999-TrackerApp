@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
 
     private val trackerUrl = "https://lonelytragedy.github.io/r1999-tracker/"
     private val trackerHost = "lonelytragedy.github.io"
+    private val workerBase = "https://r1999tracker.posofrefraction.workers.dev"
 
     private lateinit var webview: WebView
     private lateinit var webOverlay: View
@@ -122,12 +123,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         handleIntent(intent)
+        handleOAuthRedirect(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+        handleOAuthRedirect(intent)
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -135,6 +138,20 @@ class MainActivity : AppCompatActivity() {
             bottomNav.selectedItemId = R.id.navGrabber
             Bus.lastUrl?.let { showUrl(it) }
         }
+    }
+
+    private fun handleOAuthRedirect(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme != "reverse1999tracker") return
+        bottomNav.selectedItemId = R.id.navTracker
+        val error = data.getQueryParameter("error")
+        val refresh = data.getQueryParameter("refresh_token")
+        if (error != null || refresh.isNullOrEmpty()) {
+            Toast.makeText(this, "Drive sign-in failed", Toast.LENGTH_LONG).show()
+            return
+        }
+        val js = "window.__driveConnected && window.__driveConnected(${JSONObject.quote(refresh)})"
+        webview.post { webview.evaluateJavascript(js, null) }
     }
 
     private fun bindViews() {
@@ -374,6 +391,18 @@ class MainActivity : AppCompatActivity() {
         fun saveDatabase(json: String, filename: String) {
             pendingSaveJson = json
             runOnUiThread { createDoc.launch(filename) }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun connectDrive() {
+            runOnUiThread {
+                try {
+                    androidx.browser.customtabs.CustomTabsIntent.Builder().build()
+                        .launchUrl(this@MainActivity, Uri.parse("$workerBase/oauth/start"))
+                } catch (_: Exception) {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$workerBase/oauth/start")))
+                }
+            }
         }
     }
 
