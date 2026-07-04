@@ -60,14 +60,11 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
             val parts = requestLine.split(" ")
             if (parts.size < 2) return
             if (parts[0].equals("CONNECT", true)) {
-                Bus.logLine("CONNECT ${parts[1]}")
                 handleConnect(client, input, parts[1])
             } else {
-                Bus.logLine("${parts[0]} ${parts[1]}")
                 handlePlain(client, input, parts)
             }
-        } catch (e: Exception) {
-            Bus.logLine("err: ${e.javaClass.simpleName} ${e.message ?: ""}")
+        } catch (_: Exception) {
         } finally {
             try {
                 client.close()
@@ -192,14 +189,13 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
     }
 
     private fun shouldMitm(host: String): Boolean {
-        return host.contains("sl916.com")
+        return host.startsWith("game-re-") && host.endsWith(".sl916.com")
     }
 
     private fun tunnel(client: Socket, input: InputStream, host: String, port: Int) {
         val real = try {
             Socket(host, port)
         } catch (e: Exception) {
-            Bus.logLine("tunnel connect $host failed: ${e.message ?: ""}")
             return
         }
         val up = Thread { pipe(input, real.getOutputStream()) }
