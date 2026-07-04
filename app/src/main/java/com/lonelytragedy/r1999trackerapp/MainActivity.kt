@@ -73,6 +73,21 @@ class MainActivity : AppCompatActivity() {
             cb.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data))
         }
 
+    private var pendingSaveJson: String? = null
+
+    private val createDoc =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            val json = pendingSaveJson
+            pendingSaveJson = null
+            if (uri == null || json == null) return@registerForActivityResult
+            try {
+                contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
+                Toast.makeText(this, R.string.db_saved, Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Save failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
     private val notifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -175,6 +190,7 @@ class MainActivity : AppCompatActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             mediaPlaybackRequiresUserGesture = false
         }
+        webview.addJavascriptInterface(WebBridge(), "AndroidBridge")
         webview.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val host = request.url.host ?: return false
@@ -350,6 +366,14 @@ class MainActivity : AppCompatActivity() {
                 this, Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
             if (!granted) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private inner class WebBridge {
+        @android.webkit.JavascriptInterface
+        fun saveDatabase(json: String, filename: String) {
+            pendingSaveJson = json
+            runOnUiThread { createDoc.launch(filename) }
         }
     }
 
