@@ -27,6 +27,7 @@
     <string name="status_found">Link captured and copied</string>
     <string name="no_link">No link yet</string>
     <string name="notif_channel">Capture</string>
+    <string name="notif_channel_found">Link found</string>
     <string name="notif_waiting">Waiting for the summon link…</string>
     <string name="notif_armed">Ready. Tap Start VPN, then open Summon → Record in the game.</string>
     <string name="notif_capturing">Capturing… open Summon → Record in the game.</string>

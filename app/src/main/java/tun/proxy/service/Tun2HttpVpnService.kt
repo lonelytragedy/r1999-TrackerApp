@@ -11,6 +11,8 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import com.lonelytragedy.r1999trackerapp.Bus
 import com.lonelytragedy.r1999trackerapp.MainActivity
@@ -28,6 +30,7 @@ class Tun2HttpVpnService : VpnService() {
         private const val NOTIF_ID = 2
         private const val FOUND_ID = 3
         private const val CHANNEL_ID = "vpn"
+        private const val CHANNEL_FOUND = "found_link"
 
         init {
             System.loadLibrary("tun2http")
@@ -37,6 +40,8 @@ class Tun2HttpVpnService : VpnService() {
     private var vpn: ParcelFileDescriptor? = null
     private var proxy: MitmProxy? = null
     private var capturing = false
+    private var stopping = false
+    private val handler = Handler(Looper.getMainLooper())
 
     private external fun jni_init()
     private external fun jni_start(tun: Int, fwd53: Boolean, rcode: Int, proxyIp: String, proxyPort: Int)
@@ -65,6 +70,7 @@ class Tun2HttpVpnService : VpnService() {
 
     private fun arm() {
         capturing = false
+        stopping = false
         Bus.vpnRunning = true
         Bus.emitState()
         startForegroundCompat(armedNotification())
@@ -147,11 +153,24 @@ class Tun2HttpVpnService : VpnService() {
         cm.setPrimaryClip(ClipData.newPlainText("summon", url))
         Bus.emitUrl(url)
         getSystemService(NotificationManager::class.java).notify(FOUND_ID, foundNotification())
+        if (!stopping) {
+            stopping = true
+            Bus.logLine("link captured — stopping VPN")
+            handler.postDelayed({
+                stopEverything()
+                stopSelf()
+            }, 1500)
+        }
     }
 
     private fun createChannel() {
-        val ch = NotificationChannel(CHANNEL_ID, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
-        getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
+        val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
+        )
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_FOUND, getString(R.string.notif_channel_found), NotificationManager.IMPORTANCE_HIGH)
+        )
     }
 
     private fun serviceIntent(action: String, req: Int): PendingIntent {
@@ -190,7 +209,7 @@ class Tun2HttpVpnService : VpnService() {
     }
 
     private fun foundNotification(): Notification {
-        return Notification.Builder(this, CHANNEL_ID)
+        return Notification.Builder(this, CHANNEL_FOUND)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.notif_found))
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
