@@ -24,11 +24,13 @@
             android:padding="32dp"
             android:background="#0B0E24">
 
-            <ImageView
-                android:layout_width="72dp"
-                android:layout_height="72dp"
+            <com.google.android.material.imageview.ShapeableImageView
+                android:layout_width="76dp"
+                android:layout_height="76dp"
                 android:layout_marginBottom="20dp"
-                android:src="@drawable/app_logo" />
+                android:scaleType="centerCrop"
+                android:src="@drawable/app_logo"
+                app:shapeAppearanceOverlay="@style/CircleShape" />
 
             <ProgressBar
                 android:id="@+id/webProgress"

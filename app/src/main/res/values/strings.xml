@@ -28,7 +28,12 @@
     <string name="no_link">No link yet</string>
     <string name="notif_channel">Capture</string>
     <string name="notif_waiting">Waiting for the summon link…</string>
-    <string name="notif_found">Summon link captured</string>
+    <string name="notif_armed">Ready. Tap Start VPN, then open Summon → Record in the game.</string>
+    <string name="notif_capturing">Capturing… open Summon → Record in the game.</string>
+    <string name="notif_found">Summon link captured — tap to open</string>
+    <string name="action_start_vpn">Start VPN</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_stop">Stop</string>
     <string name="copied">Copied to clipboard</string>
     <string name="log_title">Log</string>
     <string name="clear_log">Clear</string>

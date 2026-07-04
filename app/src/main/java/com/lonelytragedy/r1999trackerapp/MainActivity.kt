@@ -32,6 +32,10 @@ import tun.proxy.service.Tun2HttpVpnService
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        const val EXTRA_SHOW_LINK = "show_link"
+    }
+
     private val trackerUrl = "https://lonelytragedy.github.io/r1999-tracker/"
     private val trackerHost = "lonelytragedy.github.io"
 
@@ -74,7 +78,7 @@ class MainActivity : AppCompatActivity() {
 
     private val vpnPrepare =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) startVpn()
+            if (result.resultCode == RESULT_OK) armVpn()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,6 +105,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_SHOW_LINK, false) == true) {
+            bottomNav.selectedItemId = R.id.navGrabber
+            Bus.lastUrl?.let { showUrl(it) }
+        }
     }
 
     private fun bindViews() {
@@ -283,14 +302,14 @@ class MainActivity : AppCompatActivity() {
             startService(Intent(this, Tun2HttpVpnService::class.java).setAction(Tun2HttpVpnService.ACTION_STOP))
         } else {
             val prepare = VpnService.prepare(this)
-            if (prepare != null) vpnPrepare.launch(prepare) else startVpn()
+            if (prepare != null) vpnPrepare.launch(prepare) else armVpn()
         }
     }
 
-    private fun startVpn() {
+    private fun armVpn() {
         ContextCompat.startForegroundService(
             this,
-            Intent(this, Tun2HttpVpnService::class.java).setAction(Tun2HttpVpnService.ACTION_START)
+            Intent(this, Tun2HttpVpnService::class.java).setAction(Tun2HttpVpnService.ACTION_ARM)
         )
     }
 

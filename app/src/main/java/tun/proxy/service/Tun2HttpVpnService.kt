@@ -3,6 +3,7 @@ package tun.proxy.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -12,6 +13,7 @@ import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import com.lonelytragedy.r1999trackerapp.Bus
+import com.lonelytragedy.r1999trackerapp.MainActivity
 import com.lonelytragedy.r1999trackerapp.MitmProxy
 import com.lonelytragedy.r1999trackerapp.R
 import tun.utils.Util
@@ -19,10 +21,12 @@ import tun.utils.Util
 class Tun2HttpVpnService : VpnService() {
 
     companion object {
-        const val ACTION_START = "com.lonelytragedy.r1999trackerapp.VPN_START"
+        const val ACTION_ARM = "com.lonelytragedy.r1999trackerapp.VPN_ARM"
+        const val ACTION_ENABLE = "com.lonelytragedy.r1999trackerapp.VPN_ENABLE"
         const val ACTION_STOP = "com.lonelytragedy.r1999trackerapp.VPN_STOP"
         private const val PROXY_PORT = 8080
         private const val NOTIF_ID = 2
+        private const val FOUND_ID = 3
         private const val CHANNEL_ID = "vpn"
 
         init {
@@ -32,6 +36,7 @@ class Tun2HttpVpnService : VpnService() {
 
     private var vpn: ParcelFileDescriptor? = null
     private var proxy: MitmProxy? = null
+    private var capturing = false
 
     private external fun jni_init()
     private external fun jni_start(tun: Int, fwd53: Boolean, rcode: Int, proxyIp: String, proxyPort: Int)
@@ -46,26 +51,43 @@ class Tun2HttpVpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopEverything()
-            stopSelf()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopEverything()
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_ENABLE -> enable()
+            else -> arm()
         }
-        startForegroundCompat()
+        return START_STICKY
+    }
+
+    private fun arm() {
+        capturing = false
+        Bus.vpnRunning = true
+        Bus.emitState()
+        startForegroundCompat(armedNotification())
+        Bus.logLine("VPN armed — waiting for Start VPN")
+    }
+
+    private fun enable() {
+        if (capturing) return
         try {
             startProxy()
             val pfd = build().establish() ?: throw IllegalStateException("establish() returned null")
             vpn = pfd
             jni_start(pfd.fd, false, 3, "127.0.0.1", PROXY_PORT)
+            capturing = true
             Bus.vpnRunning = true
             Bus.emitState()
+            notifyForeground(capturingNotification())
             Bus.logLine("VPN capture started")
         } catch (ex: Throwable) {
             Bus.logLine("VPN start failed: ${ex.message ?: ex.javaClass.simpleName}")
             stopEverything()
             stopSelf()
         }
-        return START_STICKY
     }
 
     override fun onDestroy() {
@@ -99,6 +121,7 @@ class Tun2HttpVpnService : VpnService() {
         }
         proxy?.stop()
         proxy = null
+        capturing = false
         Bus.vpnRunning = false
         Bus.emitState()
     }
@@ -123,32 +146,60 @@ class Tun2HttpVpnService : VpnService() {
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText("summon", url))
         Bus.emitUrl(url)
-        notifyText(getString(R.string.notif_found))
+        getSystemService(NotificationManager::class.java).notify(FOUND_ID, foundNotification())
     }
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = NotificationChannel(CHANNEL_ID, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
-            getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
-        }
+        val ch = NotificationChannel(CHANNEL_ID, getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
+        getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
     }
 
-    private fun buildNotification(text: String): Notification {
-        val b = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, CHANNEL_ID)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(this)
-        }
-        return b.setContentTitle(getString(R.string.app_name))
+    private fun serviceIntent(action: String, req: Int): PendingIntent {
+        val i = Intent(this, Tun2HttpVpnService::class.java).setAction(action)
+        return PendingIntent.getService(this, req, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+    private fun openAppIntent(showLink: Boolean, req: Int): PendingIntent {
+        val i = Intent(this, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        if (showLink) i.putExtra(MainActivity.EXTRA_SHOW_LINK, true)
+        return PendingIntent.getActivity(this, req, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+    private fun baseBuilder(text: String, icon: Int): Notification.Builder {
+        return Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
-            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setSmallIcon(icon)
+            .setContentIntent(openAppIntent(false, 0))
+    }
+
+    private fun armedNotification(): Notification {
+        return baseBuilder(getString(R.string.notif_armed), android.R.drawable.ic_popup_sync)
             .setOngoing(true)
+            .addAction(android.R.drawable.ic_media_play, getString(R.string.action_start_vpn), serviceIntent(ACTION_ENABLE, 1))
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.action_cancel), serviceIntent(ACTION_STOP, 2))
             .build()
     }
 
-    private fun startForegroundCompat() {
-        val n = buildNotification(getString(R.string.notif_waiting))
+    private fun capturingNotification(): Notification {
+        return baseBuilder(getString(R.string.notif_capturing), android.R.drawable.stat_sys_download)
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.action_stop), serviceIntent(ACTION_STOP, 2))
+            .build()
+    }
+
+    private fun foundNotification(): Notification {
+        return Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.notif_found))
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setAutoCancel(true)
+            .setContentIntent(openAppIntent(true, 3))
+            .build()
+    }
+
+    private fun startForegroundCompat(n: Notification) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
@@ -156,7 +207,7 @@ class Tun2HttpVpnService : VpnService() {
         }
     }
 
-    private fun notifyText(text: String) {
-        getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification(text))
+    private fun notifyForeground(n: Notification) {
+        getSystemService(NotificationManager::class.java).notify(NOTIF_ID, n)
     }
 }
