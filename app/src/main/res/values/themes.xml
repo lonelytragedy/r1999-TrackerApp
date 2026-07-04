@@ -1,3 +1,8 @@
 <resources>
     <style name="Theme.R1999TrackerApp" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <style name="CircleShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>
