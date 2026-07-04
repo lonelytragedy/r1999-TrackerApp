@@ -11,11 +11,13 @@ import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -55,7 +57,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var clearBtn: Button
     private lateinit var logView: TextView
 
+    private lateinit var bottomNav: BottomNavigationView
+
     private var pageErrored = false
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    private val fileChooser =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val cb = filePathCallback ?: return@registerForActivityResult
+            filePathCallback = null
+            cb.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data))
+        }
 
     private val notifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -116,13 +128,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupTabs() {
-        val mainTabs = findViewById<MaterialButtonToggleGroup>(R.id.mainTabs)
-        mainTabs.check(R.id.tabTracker)
-        mainTabs.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val tracker = checkedId == R.id.tabTracker
+        bottomNav = findViewById(R.id.bottomNav)
+        bottomNav.selectedItemId = R.id.navTracker
+        bottomNav.setOnItemSelectedListener { item ->
+            val tracker = item.itemId == R.id.navTracker
             trackerView.visibility = if (tracker) View.VISIBLE else View.GONE
             grabberView.visibility = if (tracker) View.GONE else View.VISIBLE
+            true
         }
 
         val subTabs = findViewById<MaterialButtonToggleGroup>(R.id.subTabs)
@@ -175,6 +187,22 @@ class MainActivity : AppCompatActivity() {
                 transport.webView = tmp
                 resultMsg.sendToTarget()
                 return true
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView,
+                callback: ValueCallback<Array<Uri>>,
+                params: WebChromeClient.FileChooserParams
+            ): Boolean {
+                filePathCallback?.onReceiveValue(null)
+                filePathCallback = callback
+                return try {
+                    fileChooser.launch(params.createIntent())
+                    true
+                } catch (e: Exception) {
+                    filePathCallback = null
+                    false
+                }
             }
         }
         webRetry.setOnClickListener { loadTracker() }
@@ -290,7 +318,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun importIntoTracker() {
         val url = Bus.lastUrl ?: return
-        findViewById<MaterialButtonToggleGroup>(R.id.mainTabs).check(R.id.tabTracker)
+        bottomNav.selectedItemId = R.id.navTracker
         val js = "(function(){var i=document.getElementById('urlInput');" +
             "if(i){i.value=" + JSONObject.quote(url) + ";" +
             "if(typeof loadFromURL==='function')loadFromURL();}})()"
