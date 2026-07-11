@@ -21,7 +21,14 @@ jobs:
         with:
           gradle-version: "8.7"
 
+      - name: Restore signing keystore
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > app/signing.p12
+
       - run: gradle assembleDebug --no-daemon --stacktrace
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
 
       - uses: actions/upload-artifact@v4
         with:
