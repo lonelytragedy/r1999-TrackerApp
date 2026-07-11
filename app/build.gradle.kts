@@ -30,10 +30,11 @@ android {
 
     signingConfigs {
         create("stable") {
+            val pass = System.getenv("SIGNING_STORE_PASSWORD") ?: "changeit"
             storeFile = file("signing.p12")
-            storePassword = "reversetracker"
+            storePassword = pass
             keyAlias = "reversetracker"
-            keyPassword = "reversetracker"
+            keyPassword = pass
             storeType = "PKCS12"
         }
     }
