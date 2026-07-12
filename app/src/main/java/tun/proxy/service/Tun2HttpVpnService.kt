@@ -58,15 +58,30 @@ class Tun2HttpVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
+                setWasCapturing(false)
                 stopEverything()
                 stopSelf()
                 return START_NOT_STICKY
             }
             ACTION_ENABLE -> enable()
-            else -> arm()
+            ACTION_ARM -> arm()
+            else -> {
+                arm()
+                if (wasCapturing()) {
+                    Bus.logLine("service restarted — resuming capture")
+                    enable()
+                }
+            }
         }
         return START_STICKY
     }
+
+    private fun setWasCapturing(v: Boolean) {
+        getSharedPreferences("vpn", MODE_PRIVATE).edit().putBoolean("was_capturing", v).apply()
+    }
+
+    private fun wasCapturing(): Boolean =
+        getSharedPreferences("vpn", MODE_PRIVATE).getBoolean("was_capturing", false)
 
     private fun arm() {
         capturing = false
@@ -87,10 +102,12 @@ class Tun2HttpVpnService : VpnService() {
             capturing = true
             Bus.vpnRunning = true
             Bus.emitState()
+            setWasCapturing(true)
             notifyForeground(capturingNotification())
             Bus.logLine("VPN capture started")
         } catch (ex: Throwable) {
             Bus.logLine("VPN start failed: ${ex.message ?: ex.javaClass.simpleName}")
+            setWasCapturing(false)
             stopEverything()
             stopSelf()
         }
@@ -103,6 +120,7 @@ class Tun2HttpVpnService : VpnService() {
     }
 
     override fun onRevoke() {
+        setWasCapturing(false)
         stopEverything()
         stopSelf()
         super.onRevoke()
@@ -157,6 +175,7 @@ class Tun2HttpVpnService : VpnService() {
         getSystemService(NotificationManager::class.java).notify(FOUND_ID, foundNotification())
         if (!stopping) {
             stopping = true
+            setWasCapturing(false)
             Bus.logLine("link captured — stopping VPN")
             handler.postDelayed({
                 stopEverything()
