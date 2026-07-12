@@ -46,6 +46,8 @@
     <string name="update_later">Remind me later</string>
     <string name="update_skip">Skip this version</string>
 
+    <string name="battery_hint">Allow the app to run in the background so capture is not interrupted by the system.</string>
+
     <string name="banner_notif_channel">Banner reminders</string>
     <string name="banner_notif_title">New banner!</string>
     <string name="banner_notif_title_multi">New banners!</string>

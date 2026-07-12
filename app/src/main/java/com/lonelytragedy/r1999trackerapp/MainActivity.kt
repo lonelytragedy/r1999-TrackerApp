@@ -346,8 +346,26 @@ class MainActivity : AppCompatActivity() {
         if (Bus.vpnRunning) {
             startService(Intent(this, Tun2HttpVpnService::class.java).setAction(Tun2HttpVpnService.ACTION_STOP))
         } else {
+            ensureUnrestricted()
             val prepare = VpnService.prepare(this)
             if (prepare != null) vpnPrepare.launch(prepare) else armVpn()
+        }
+    }
+
+    private fun ensureUnrestricted() {
+        val pm = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager ?: return
+        if (pm.isIgnoringBatteryOptimizations(packageName)) return
+        Toast.makeText(this, R.string.battery_hint, Toast.LENGTH_LONG).show()
+        try {
+            startActivity(
+                Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                    .setData(Uri.parse("package:$packageName"))
+            )
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (_: Exception) {
+            }
         }
     }
 
