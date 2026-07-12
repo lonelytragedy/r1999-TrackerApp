@@ -151,7 +151,9 @@ class Tun2HttpVpnService : VpnService() {
     private fun onUrl(url: String) {
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText("summon", url))
+        Bus.pendingImportUrl = url
         Bus.emitUrl(url)
+        vibrate()
         getSystemService(NotificationManager::class.java).notify(FOUND_ID, foundNotification())
         if (!stopping) {
             stopping = true
@@ -178,11 +180,24 @@ class Tun2HttpVpnService : VpnService() {
         return PendingIntent.getService(this, req, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
-    private fun openAppIntent(showLink: Boolean, req: Int): PendingIntent {
+    private fun openAppIntent(req: Int, importLink: Boolean = false): PendingIntent {
         val i = Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        if (showLink) i.putExtra(MainActivity.EXTRA_SHOW_LINK, true)
+        if (importLink) i.putExtra(MainActivity.EXTRA_IMPORT_LINK, true)
         return PendingIntent.getActivity(this, req, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+    private fun vibrate() {
+        try {
+            val vib = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager).defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            }
+            vib.vibrate(android.os.VibrationEffect.createOneShot(250, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+        } catch (_: Exception) {
+        }
     }
 
     private fun baseBuilder(text: String, icon: Int): Notification.Builder {
@@ -190,7 +205,7 @@ class Tun2HttpVpnService : VpnService() {
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setSmallIcon(icon)
-            .setContentIntent(openAppIntent(false, 0))
+            .setContentIntent(openAppIntent(0))
     }
 
     private fun armedNotification(): Notification {
@@ -214,7 +229,7 @@ class Tun2HttpVpnService : VpnService() {
             .setContentText(getString(R.string.notif_found))
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setAutoCancel(true)
-            .setContentIntent(openAppIntent(true, 3))
+            .setContentIntent(openAppIntent(3, importLink = true))
             .build()
     }
 

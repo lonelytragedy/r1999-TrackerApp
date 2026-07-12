@@ -4,8 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.Uri
 import android.net.VpnService
 import android.os.Build
@@ -34,6 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_SHOW_LINK = "show_link"
+        const val EXTRA_IMPORT_LINK = "import_link"
     }
 
     private val trackerUrl = "https://lonelytragedy.github.io/r1999-tracker/"
@@ -65,9 +64,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomNav: BottomNavigationView
 
     private var pageErrored = false
+    private var trackerLoaded = false
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     private val drivePrefs by lazy { getSharedPreferences("drive", MODE_PRIVATE) }
+    private val updatePrefs by lazy { getSharedPreferences("update", MODE_PRIVATE) }
 
     private val fileChooser =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -126,6 +127,7 @@ class MainActivity : AppCompatActivity() {
 
         handleIntent(intent)
         handleOAuthRedirect(intent)
+        checkForUpdate()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -136,6 +138,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_IMPORT_LINK, false) == true) {
+            bottomNav.selectedItemId = R.id.navTracker
+            maybeAutoImport()
+            return
+        }
         if (intent?.getBooleanExtra(EXTRA_SHOW_LINK, false) == true) {
             bottomNav.selectedItemId = R.id.navGrabber
             Bus.lastUrl?.let { showUrl(it) }
@@ -229,7 +236,10 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 if (!pageErrored) {
                     webOverlay.visibility = View.GONE
+                    trackerLoaded = true
                     restoreDrive()
+                    scheduleBanners()
+                    maybeAutoImport()
                 }
             }
 
@@ -273,10 +283,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadTracker() {
         pageErrored = false
-        if (!isOnline()) {
-            showOffline()
-            return
-        }
+        trackerLoaded = false
         showLoading()
         webview.loadUrl(trackerUrl)
     }
@@ -298,13 +305,6 @@ class MainActivity : AppCompatActivity() {
         webMsg.text = getString(R.string.web_offline_msg)
         webMsg.visibility = View.VISIBLE
         webRetry.visibility = View.VISIBLE
-    }
-
-    private fun isOnline(): Boolean {
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
-        val net = cm.activeNetwork ?: return false
-        val caps = cm.getNetworkCapabilities(net) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private fun openExternal(url: String) {
@@ -333,6 +333,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         proxyInfo.text = getString(R.string.proxy_hint, NetUtil.wifiIp(), ProxyService.PORT)
         refreshState()
+        maybeAutoImport()
     }
 
     private fun toggle() {
@@ -382,10 +383,93 @@ class MainActivity : AppCompatActivity() {
     private fun importIntoTracker() {
         val url = Bus.lastUrl ?: return
         bottomNav.selectedItemId = R.id.navTracker
+        importUrl(url)
+    }
+
+    private fun maybeAutoImport() {
+        val url = Bus.pendingImportUrl ?: return
+        if (!trackerLoaded) return
+        Bus.pendingImportUrl = null
+        bottomNav.selectedItemId = R.id.navTracker
+        importUrl(url)
+    }
+
+    private fun importUrl(url: String) {
         val js = "(function(){var i=document.getElementById('urlInput');" +
             "if(i){i.value=" + JSONObject.quote(url) + ";" +
             "if(typeof loadFromURL==='function')loadFromURL();}})()"
         webview.post { webview.evaluateJavascript(js, null) }
+    }
+
+    private fun scheduleBanners() {
+        val js = """
+        (function(){
+          try{
+            if(typeof ACTIVE_BANNERS==='undefined')return '[]';
+            var now=Date.now();var map={};
+            ACTIVE_BANNERS.forEach(function(b){
+              var t=Date.parse(b.startUTC); if(isNaN(t)||t<=now)return;
+              var info=(typeof BANNERS!=='undefined'&&BANNERS[b.key])||{};
+              var name=info.name||b.key; var water=info.type==='Water';
+              var r6=(!water&&info.rateUp6)?info.rateUp6:[];
+              (map[t]=map[t]||[]).push({name:name,water:water,rate6:r6});
+            });
+            return JSON.stringify(Object.keys(map).map(function(k){return {at:Number(k),banners:map[k]};}));
+          }catch(e){return '[]';}
+        })()
+        """.trimIndent()
+        webview.evaluateJavascript(js) { raw -> BannerScheduler.schedule(this, raw) }
+    }
+
+    private fun checkForUpdate() {
+        Thread {
+            try {
+                val conn = java.net.URL(
+                    "https://api.github.com/repos/lonelytragedy/r1999-TrackerApp/releases/latest"
+                ).openConnection() as java.net.HttpURLConnection
+                conn.setRequestProperty("User-Agent", "R1999Tracker")
+                conn.setRequestProperty("Accept", "application/vnd.github+json")
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                if (conn.responseCode != 200) return@Thread
+                val body = conn.inputStream.bufferedReader().use { it.readText() }
+                val obj = JSONObject(body)
+                val tag = obj.optString("tag_name")
+                val page = obj.optString("html_url")
+                if (tag.isEmpty()) return@Thread
+                val current = packageManager.getPackageInfo(packageName, 0).versionName ?: return@Thread
+                if (compareVersions(tag, current) <= 0) return@Thread
+                if (updatePrefs.getString("skipped", null) == tag) return@Thread
+                runOnUiThread { showUpdateDialog(tag, page) }
+            } catch (_: Exception) {
+            }
+        }.start()
+    }
+
+    private fun compareVersions(a: String, b: String): Int {
+        val pa = a.filter { it.isDigit() || it == '.' }.split(".").mapNotNull { it.toIntOrNull() }
+        val pb = b.filter { it.isDigit() || it == '.' }.split(".").mapNotNull { it.toIntOrNull() }
+        for (i in 0 until maxOf(pa.size, pb.size)) {
+            val x = pa.getOrElse(i) { 0 }
+            val y = pb.getOrElse(i) { 0 }
+            if (x != y) return x - y
+        }
+        return 0
+    }
+
+    private fun showUpdateDialog(tag: String, page: String) {
+        if (isFinishing || isDestroyed) return
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.update_title, tag))
+            .setMessage(getString(R.string.update_msg))
+            .setPositiveButton(R.string.update_now) { _, _ ->
+                openExternal(if (page.isNotEmpty()) page else "https://github.com/lonelytragedy/r1999-TrackerApp/releases/latest")
+            }
+            .setNeutralButton(R.string.update_later) { d, _ -> d.dismiss() }
+            .setNegativeButton(R.string.update_skip) { _, _ ->
+                updatePrefs.edit().putString("skipped", tag).apply()
+            }
+            .show()
     }
 
     private fun maybeRequestNotifications() {

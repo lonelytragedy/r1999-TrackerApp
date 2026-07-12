@@ -16,6 +16,9 @@ object Bus {
     var lastUrl: String? = null
 
     @Volatile
+    var pendingImportUrl: String? = null
+
+    @Volatile
     var listener: ((String) -> Unit)? = null
 
     @Volatile

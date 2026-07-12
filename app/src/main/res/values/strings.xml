@@ -39,4 +39,14 @@
     <string name="copied">Copied to clipboard</string>
     <string name="log_title">Log</string>
     <string name="clear_log">Clear</string>
+
+    <string name="update_title">Update available: %1$s</string>
+    <string name="update_msg">A newer version of the app is available. Update now?</string>
+    <string name="update_now">Update</string>
+    <string name="update_later">Remind me later</string>
+    <string name="update_skip">Skip this version</string>
+
+    <string name="banner_notif_channel">Banner reminders</string>
+    <string name="banner_notif_title">New banner!</string>
+    <string name="banner_notif_title_multi">New banners!</string>
 </resources>
