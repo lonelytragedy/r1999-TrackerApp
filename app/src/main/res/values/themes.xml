@@ -9,6 +9,7 @@
         <item name="appLog">@color/warm_log</item>
         <item name="appLogBg">@color/warm_log_bg</item>
         <item name="appNavChecked">@color/warm_accent</item>
+        <item name="appNavBg">@color/warm_nav_bg</item>
         <item name="colorPrimary">@color/warm_accent</item>
         <item name="colorOnPrimary">#1A1109</item>
         <item name="android:windowBackground">?attr/appBgPage</item>
@@ -25,6 +26,7 @@
         <item name="appLog">@color/cool_log</item>
         <item name="appLogBg">@color/cool_log_bg</item>
         <item name="appNavChecked">@color/cool_nav_checked</item>
+        <item name="appNavBg">@color/cool_nav_bg</item>
         <item name="colorPrimary">@color/cool_accent</item>
         <item name="colorOnPrimary">#0B0E24</item>
     </style>

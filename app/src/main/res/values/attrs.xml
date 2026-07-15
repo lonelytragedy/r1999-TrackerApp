@@ -8,4 +8,5 @@
     <attr name="appLog" format="color" />
     <attr name="appLogBg" format="color" />
     <attr name="appNavChecked" format="color" />
+    <attr name="appNavBg" format="color" />
 </resources>

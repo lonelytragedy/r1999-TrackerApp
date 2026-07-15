@@ -9,6 +9,7 @@
     <color name="warm_accent">#E0913F</color>
     <color name="warm_log">#8FE39A</color>
     <color name="warm_log_bg">#0A0704</color>
+    <color name="warm_nav_bg">#CC18130D</color>
 
     <color name="cool_bg_page">#0B0E24</color>
     <color name="cool_bg_surface">#151A3A</color>
@@ -19,4 +20,5 @@
     <color name="cool_log">#8FE39A</color>
     <color name="cool_log_bg">#0A0C1E</color>
     <color name="cool_nav_checked">#8FA0FF</color>
+    <color name="cool_nav_bg">#151A3A</color>
 </resources>
