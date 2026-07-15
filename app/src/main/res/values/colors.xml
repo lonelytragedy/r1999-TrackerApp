@@ -1,3 +1,22 @@
 <resources>
-    <color name="ic_launcher_background">#12162E</color>
+    <color name="ic_launcher_background">#1A1109</color>
+
+    <color name="warm_bg_page">#0D0A07</color>
+    <color name="warm_bg_surface">#18130D</color>
+    <color name="warm_stroke">#4A3A24</color>
+    <color name="warm_text_primary">#EFE7D6</color>
+    <color name="warm_text_muted">#AB9F88</color>
+    <color name="warm_accent">#E0913F</color>
+    <color name="warm_log">#8FE39A</color>
+    <color name="warm_log_bg">#0A0704</color>
+
+    <color name="cool_bg_page">#0B0E24</color>
+    <color name="cool_bg_surface">#151A3A</color>
+    <color name="cool_stroke">#2A3070</color>
+    <color name="cool_text_primary">#E4E7F5</color>
+    <color name="cool_text_muted">#9AA0C6</color>
+    <color name="cool_accent">#7B8CFF</color>
+    <color name="cool_log">#8FE39A</color>
+    <color name="cool_log_bg">#0A0C1E</color>
+    <color name="cool_nav_checked">#8FA0FF</color>
 </resources>

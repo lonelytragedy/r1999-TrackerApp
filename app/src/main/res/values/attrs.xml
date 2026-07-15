@@ -1,0 +1,11 @@
+<resources>
+    <attr name="appBgPage" format="color" />
+    <attr name="appBgSurface" format="color" />
+    <attr name="appStroke" format="color" />
+    <attr name="appTextPrimary" format="color" />
+    <attr name="appTextMuted" format="color" />
+    <attr name="appAccent" format="color" />
+    <attr name="appLog" format="color" />
+    <attr name="appLogBg" format="color" />
+    <attr name="appNavChecked" format="color" />
+</resources>

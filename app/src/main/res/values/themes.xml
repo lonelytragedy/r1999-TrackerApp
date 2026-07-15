@@ -1,5 +1,33 @@
 <resources>
-    <style name="Theme.R1999TrackerApp" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.R1999TrackerApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="appBgPage">@color/warm_bg_page</item>
+        <item name="appBgSurface">@color/warm_bg_surface</item>
+        <item name="appStroke">@color/warm_stroke</item>
+        <item name="appTextPrimary">@color/warm_text_primary</item>
+        <item name="appTextMuted">@color/warm_text_muted</item>
+        <item name="appAccent">@color/warm_accent</item>
+        <item name="appLog">@color/warm_log</item>
+        <item name="appLogBg">@color/warm_log_bg</item>
+        <item name="appNavChecked">@color/warm_accent</item>
+        <item name="colorPrimary">@color/warm_accent</item>
+        <item name="colorOnPrimary">#1A1109</item>
+        <item name="android:windowBackground">?attr/appBgPage</item>
+        <item name="android:statusBarColor">?attr/appBgPage</item>
+    </style>
+
+    <style name="Theme.R1999TrackerApp.Classic">
+        <item name="appBgPage">@color/cool_bg_page</item>
+        <item name="appBgSurface">@color/cool_bg_surface</item>
+        <item name="appStroke">@color/cool_stroke</item>
+        <item name="appTextPrimary">@color/cool_text_primary</item>
+        <item name="appTextMuted">@color/cool_text_muted</item>
+        <item name="appAccent">@color/cool_accent</item>
+        <item name="appLog">@color/cool_log</item>
+        <item name="appLogBg">@color/cool_log_bg</item>
+        <item name="appNavChecked">@color/cool_nav_checked</item>
+        <item name="colorPrimary">@color/cool_accent</item>
+        <item name="colorOnPrimary">#0B0E24</item>
+    </style>
 
     <style name="CircleShape">
         <item name="cornerFamily">rounded</item>

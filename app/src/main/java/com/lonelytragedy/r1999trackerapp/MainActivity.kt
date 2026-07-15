@@ -102,6 +102,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (getSharedPreferences("app", MODE_PRIVATE).getString("skin", "reversed") == "classic") {
+            setTheme(R.style.Theme_R1999TrackerApp_Classic)
+        }
         setContentView(R.layout.activity_main)
 
         bindViews()
@@ -521,6 +524,15 @@ class MainActivity : AppCompatActivity() {
         @android.webkit.JavascriptInterface
         fun disconnectDrive() {
             drivePrefs.edit().remove("refresh").apply()
+        }
+
+        @android.webkit.JavascriptInterface
+        fun setSkin(skin: String) {
+            val s = if (skin == "classic") "classic" else "reversed"
+            val prefs = getSharedPreferences("app", MODE_PRIVATE)
+            if (prefs.getString("skin", "reversed") == s) return
+            prefs.edit().putString("skin", s).apply()
+            runOnUiThread { recreate() }
         }
     }
 
