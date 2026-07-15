@@ -243,15 +243,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="14dp"
         android:background="@drawable/nav_bg"
-        android:minHeight="0dp"
-        android:paddingLeft="4dp"
-        android:paddingRight="4dp"
-        app:elevation="8dp"
+        android:paddingLeft="6dp"
+        android:paddingRight="6dp"
+        app:elevation="10dp"
         app:menu="@menu/bottom_nav"
-        app:itemIconSize="22dp"
+        app:itemIconSize="24dp"
         app:itemIconTint="@color/nav_item"
         app:itemTextColor="@color/nav_item"
-        app:labelVisibilityMode="labeled" />
+        app:labelVisibilityMode="unlabeled" />
 </FrameLayout>

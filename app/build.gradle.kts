@@ -13,8 +13,8 @@ android {
         applicationId = "com.lonelytragedy.r1999trackerapp"
         minSdk = 26
         targetSdk = 34
-        versionCode = 12
-        versionName = "1.12"
+        versionCode = 13
+        versionName = "1.13"
 
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
