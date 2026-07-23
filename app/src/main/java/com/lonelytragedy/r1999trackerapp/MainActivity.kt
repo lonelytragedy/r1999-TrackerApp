@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_SHOW_LINK = "show_link"
         const val EXTRA_IMPORT_LINK = "import_link"
+        const val GAME_PACKAGE = "com.bluepoch.m.en.reverse1999"
     }
 
     private val trackerUrl = "https://lonelytragedy.github.io/r1999-tracker/"
@@ -242,6 +243,7 @@ class MainActivity : AppCompatActivity() {
                     trackerLoaded = true
                     restoreDrive()
                     scheduleBanners()
+                    pushWidgetData()
                     maybeAutoImport()
                 }
             }
@@ -377,6 +379,19 @@ class MainActivity : AppCompatActivity() {
             this,
             Intent(this, Tun2HttpVpnService::class.java).setAction(Tun2HttpVpnService.ACTION_ARM)
         )
+        launchGame()
+    }
+
+    private fun launchGame() {
+        try {
+            val i = packageManager.getLaunchIntentForPackage(GAME_PACKAGE)
+            if (i != null) {
+                startActivity(i)
+            } else {
+                Toast.makeText(this, "Game app not found", Toast.LENGTH_SHORT).show()
+            }
+        } catch (_: Exception) {
+        }
     }
 
     private fun refreshState() {
@@ -442,6 +457,28 @@ class MainActivity : AppCompatActivity() {
         webview.evaluateJavascript(js) { raw -> BannerScheduler.schedule(this, raw) }
     }
 
+    private fun pushWidgetData() {
+        val js = """
+        (function(){
+          try{
+            if(typeof ACTIVE_BANNERS==='undefined')return '[]';
+            var now=Date.now();var out=[];
+            ACTIVE_BANNERS.forEach(function(b){
+              if(!b.startUTC||!b.endUTC)return;
+              var s=Date.parse(b.startUTC),e=Date.parse(b.endUTC);
+              if(isNaN(s)||isNaN(e)||e<=now)return;
+              var info=(typeof BANNERS!=='undefined'&&BANNERS[b.key])||{};
+              var name=info.name||b.key;var type=info.type||'';
+              var r=(info.rateUp6&&info.rateUp6.length)?info.rateUp6:(b.rateUp||[]);
+              out.push({name:name,type:type,rate:r,image:b.image||'',start:s,end:e});
+            });
+            return JSON.stringify(out);
+          }catch(err){return '[]';}
+        })()
+        """.trimIndent()
+        webview.evaluateJavascript(js) { raw -> BannerWidgetProvider.pushData(this, raw) }
+    }
+
     private fun checkForUpdate() {
         Thread {
             try {
@@ -461,7 +498,18 @@ class MainActivity : AppCompatActivity() {
                 val current = packageManager.getPackageInfo(packageName, 0).versionName ?: return@Thread
                 if (compareVersions(tag, current) <= 0) return@Thread
                 if (updatePrefs.getString("skipped", null) == tag) return@Thread
-                runOnUiThread { showUpdateDialog(tag, page) }
+                var apkUrl = ""
+                val assets = obj.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val a = assets.getJSONObject(i)
+                        if (a.optString("name").endsWith(".apk")) {
+                            apkUrl = a.optString("browser_download_url")
+                            if (a.optString("name") == "Reverse1999TrackerApp.apk") break
+                        }
+                    }
+                }
+                runOnUiThread { showUpdateDialog(tag, apkUrl, page) }
             } catch (_: Exception) {
             }
         }.start()
@@ -478,19 +526,99 @@ class MainActivity : AppCompatActivity() {
         return 0
     }
 
-    private fun showUpdateDialog(tag: String, page: String) {
+    private fun showUpdateDialog(tag: String, apkUrl: String, page: String) {
         if (isFinishing || isDestroyed) return
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(getString(R.string.update_title, tag))
             .setMessage(getString(R.string.update_msg))
             .setPositiveButton(R.string.update_now) { _, _ ->
-                openExternal(if (page.isNotEmpty()) page else "https://github.com/lonelytragedy/r1999-TrackerApp/releases/latest")
+                if (apkUrl.isNotEmpty()) startUpdate(apkUrl)
+                else openExternal(if (page.isNotEmpty()) page else "https://github.com/lonelytragedy/r1999-TrackerApp/releases/latest")
             }
             .setNeutralButton(R.string.update_later) { d, _ -> d.dismiss() }
             .setNegativeButton(R.string.update_skip) { _, _ ->
                 updatePrefs.edit().putString("skipped", tag).apply()
             }
             .show()
+    }
+
+    private fun startUpdate(url: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+            Toast.makeText(this, R.string.update_allow_installs, Toast.LENGTH_LONG).show()
+            try {
+                startActivity(
+                    Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
+                )
+            } catch (_: Exception) {
+            }
+            return
+        }
+        downloadAndInstall(url)
+    }
+
+    private fun downloadAndInstall(url: String) {
+        val bar = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
+        val label = TextView(this).apply { setPadding(0, 0, 0, 20) }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(56, 40, 56, 12)
+            addView(label)
+            addView(bar)
+        }
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.update_downloading)
+            .setView(box)
+            .setCancelable(false)
+            .create()
+        dialog.show()
+
+        Thread {
+            try {
+                val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                conn.instanceFollowRedirects = true
+                conn.setRequestProperty("User-Agent", "R1999Tracker")
+                conn.connectTimeout = 15000
+                conn.readTimeout = 30000
+                conn.connect()
+                val total = conn.contentLengthLong
+                val apk = java.io.File(cacheDir, "update.apk")
+                conn.inputStream.use { input ->
+                    java.io.FileOutputStream(apk).use { out ->
+                        val buf = ByteArray(16384)
+                        var read: Int
+                        var sum = 0L
+                        while (input.read(buf).also { read = it } != -1) {
+                            out.write(buf, 0, read)
+                            sum += read
+                            if (total > 0) {
+                                val pct = (sum * 100 / total).toInt()
+                                runOnUiThread { bar.progress = pct; label.text = "$pct%" }
+                            }
+                        }
+                    }
+                }
+                runOnUiThread { dialog.dismiss(); installApk(apk) }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    dialog.dismiss()
+                    Toast.makeText(this, getString(R.string.update_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                }
+            }
+        }.start()
+    }
+
+    private fun installApk(apk: java.io.File) {
+        try {
+            val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.fileprovider", apk)
+            startActivity(
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+        } catch (e: Exception) {
+            Toast.makeText(this, getString(R.string.update_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun maybeRequestNotifications() {

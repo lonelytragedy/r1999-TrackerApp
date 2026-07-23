@@ -45,10 +45,19 @@
     <string name="update_now">Update</string>
     <string name="update_later">Remind me later</string>
     <string name="update_skip">Skip this version</string>
+    <string name="update_downloading">Downloading update…</string>
+    <string name="update_allow_installs">Allow installing updates, then tap Update again</string>
+    <string name="update_failed">Update failed: %1$s</string>
 
     <string name="battery_hint">Allow the app to run in the background so capture is not interrupted by the system.</string>
 
     <string name="banner_notif_channel">Banner reminders</string>
     <string name="banner_notif_title">New banner!</string>
     <string name="banner_notif_title_multi">New banners!</string>
+
+    <string name="widget_desc">Daily reset countdown and current banners</string>
+    <string name="widget_resets_in">resets in</string>
+    <string name="widget_ends_in">ends in</string>
+    <string name="widget_starts_in">starts in</string>
+    <string name="widget_empty">Open the app once to load banners</string>
 </resources>

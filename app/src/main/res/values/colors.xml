@@ -21,4 +21,24 @@
     <color name="cool_log_bg">#0A0C1E</color>
     <color name="cool_nav_checked">#8FA0FF</color>
     <color name="cool_nav_bg">#151A3A</color>
+
+    <color name="widget_card">#17120C</color>
+    <color name="widget_gold">#C8A24E</color>
+    <color name="widget_name">#F2ECD8</color>
+    <color name="widget_muted">#AB9F88</color>
+    <color name="widget_wordmark">#CBB98F</color>
+    <color name="widget_rate">#D8B46A</color>
+    <color name="widget_art_fallback">#241A10</color>
+    <color name="widget_time_active">#8FD6A0</color>
+    <color name="widget_time_soon">#E2C06A</color>
+    <color name="widget_time_start">#E0913F</color>
+    <color name="widget_plus_bg">#D8B46A</color>
+    <color name="widget_plus_text">#17120C</color>
+
+    <color name="type_collab">#2ED6BE</color>
+    <color name="type_water">#60AAFF</color>
+    <color name="type_character">#C47FFF</color>
+    <color name="type_limited">#FF4D5A</color>
+    <color name="type_regular">#FFB93C</color>
+    <color name="type_special">#FF7EB3</color>
 </resources>

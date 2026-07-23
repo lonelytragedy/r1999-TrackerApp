@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import org.json.JSONArray
 import org.json.JSONTokener
 
@@ -11,6 +12,18 @@ object BannerScheduler {
 
     fun schedule(ctx: Context, raw: String?) {
         if (raw == null) return
+        ctx.getSharedPreferences("banners", Context.MODE_PRIVATE)
+            .edit().putString("schedule", raw).apply()
+        register(ctx, raw)
+    }
+
+    fun reschedule(ctx: Context) {
+        val raw = ctx.getSharedPreferences("banners", Context.MODE_PRIVATE)
+            .getString("schedule", null) ?: return
+        register(ctx, raw)
+    }
+
+    private fun register(ctx: Context, raw: String) {
         try {
             val value = JSONTokener(raw).nextValue()
             val arr = when (value) {
@@ -22,6 +35,7 @@ object BannerScheduler {
             val prefs = ctx.getSharedPreferences("banners", Context.MODE_PRIVATE)
             val notified = prefs.getStringSet("notified", emptySet()) ?: emptySet()
             val now = System.currentTimeMillis()
+            val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
 
             for (i in 0 until arr.length()) {
                 val group = arr.getJSONObject(i)
@@ -40,7 +54,11 @@ object BannerScheduler {
                     ctx, (at / 60000).toInt(), intent,
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+                if (exact) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+                } else {
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+                }
             }
         } catch (_: Exception) {
         }
