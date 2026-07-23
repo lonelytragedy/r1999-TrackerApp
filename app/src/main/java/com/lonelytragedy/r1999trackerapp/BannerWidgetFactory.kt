@@ -3,6 +3,13 @@ package com.lonelytragedy.r1999trackerapp
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.Shader
 import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
@@ -182,11 +189,57 @@ class BannerWidgetFactory(private val ctx: Context) : RemoteViewsService.RemoteV
         val file = File(dir, fname)
         if (!file.exists() || file.length() == 0L) download(imageBase + image, file)
         if (!file.exists() || file.length() == 0L) return null
-        return try {
-            BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = 2 })
+        val src = try {
+            BitmapFactory.decodeFile(file.absolutePath)
         } catch (_: Throwable) {
             null
+        } ?: return null
+        return try {
+            render(src)
+        } catch (_: Throwable) {
+            null
+        } finally {
+            src.recycle()
         }
+    }
+
+    private fun render(src: Bitmap): Bitmap {
+        val w = 600
+        val h = 80
+        val radius = 22f
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        val rect = RectF(0f, 0f, w.toFloat(), h.toFloat())
+        val clip = Path().apply {
+            addRoundRect(
+                rect,
+                floatArrayOf(0f, 0f, 0f, 0f, radius, radius, radius, radius),
+                Path.Direction.CW
+            )
+        }
+        canvas.clipPath(clip)
+        val srcRatio = src.width.toFloat() / src.height
+        val dstRatio = w.toFloat() / h
+        val m = Matrix()
+        if (srcRatio > dstRatio) {
+            val scale = h.toFloat() / src.height
+            m.setScale(scale, scale)
+            m.postTranslate((w - src.width * scale) / 2f, 0f)
+        } else {
+            val scale = w.toFloat() / src.width
+            m.setScale(scale, scale)
+            m.postTranslate(0f, (h - src.height * scale) / 2f)
+        }
+        canvas.drawBitmap(src, m, Paint(Paint.FILTER_BITMAP_FLAG))
+        val scrim = Paint().apply {
+            shader = LinearGradient(
+                0f, 0f, w * 0.5f, 0f,
+                intArrayOf(0xE00A0703.toInt(), 0x590A0703, 0x000A0703),
+                floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRect(rect, scrim)
+        return out
     }
 
     private fun download(url: String, dest: File) {
