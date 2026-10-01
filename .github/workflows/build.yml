@@ -12,6 +12,11 @@ on:
         description: "Release notes"
         required: false
         default: ""
+      replace_release:
+        description: "Replace the release if this tag already exists"
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build:
@@ -65,7 +70,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.release_tag }}
           NOTES: ${{ inputs.release_notes }}
+          REPLACE: ${{ inputs.replace_release }}
         run: |
           printf '%s\n' "$NOTES" > release-notes.md
           cp app/build/outputs/apk/debug/app-debug.apk Reverse1999TrackerApp.apk
+          if [ "$REPLACE" = "true" ] && gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes --cleanup-tag
+          fi
           gh release create "$TAG" Reverse1999TrackerApp.apk --target "$GITHUB_SHA" --title "$TAG" --notes-file release-notes.md --latest
