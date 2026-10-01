@@ -104,6 +104,7 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         val real = try {
             val r = (SSLSocketFactory.getDefault() as SSLSocketFactory)
                 .createSocket(host, targetPort) as SSLSocket
+            r.sslParameters = r.sslParameters.apply { endpointIdentificationAlgorithm = "HTTPS" }
             r.startHandshake()
             r
         } catch (e: Exception) {
@@ -111,12 +112,10 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
             return
         }
 
-        val up = Thread { scanPipe(clientTls.inputStream, real.getOutputStream(), host) }
-        val down = Thread { pipe(real.inputStream, clientTls.getOutputStream()) }
-        up.start()
-        down.start()
-        up.join()
-        down.join()
+        relay(
+            { scanPipe(clientTls.inputStream, real.getOutputStream(), host) },
+            { pipe(real.inputStream, clientTls.getOutputStream()) },
+        )
 
         close(clientTls)
         close(real)
@@ -147,12 +146,7 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         sout.write("\r\n".toByteArray())
         sout.flush()
 
-        val up = Thread { pipe(input, sout) }
-        val down = Thread { pipe(server.getInputStream(), client.getOutputStream()) }
-        up.start()
-        down.start()
-        up.join()
-        down.join()
+        relay({ pipe(input, sout) }, { pipe(server.getInputStream(), client.getOutputStream()) })
         close(server)
     }
 
@@ -198,13 +192,17 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         } catch (e: Exception) {
             return
         }
-        val up = Thread { pipe(input, real.getOutputStream()) }
-        val down = Thread { pipe(real.getInputStream(), client.getOutputStream()) }
-        up.start()
-        down.start()
-        up.join()
-        down.join()
+        relay({ pipe(input, real.getOutputStream()) }, { pipe(real.getInputStream(), client.getOutputStream()) })
         close(real)
+    }
+
+    // Runs the upstream direction on the calling (pool) thread instead of
+    // spawning a second thread per connection.
+    private fun relay(up: () -> Unit, down: () -> Unit) {
+        val downThread = Thread(down)
+        downThread.start()
+        up()
+        downThread.join()
     }
 
     private fun capture(url: String) {
