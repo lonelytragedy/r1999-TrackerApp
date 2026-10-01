@@ -2,30 +2,21 @@
     <string name="app_name">Reverse: Tracker</string>
 
     <string name="tab_tracker">Tracker</string>
-    <string name="tab_grabber">Link grabber</string>
+    <string name="tab_grabber">Import</string>
 
-    <string name="sub_vpn">VPN</string>
-    <string name="sub_proxy">Proxy</string>
+    <string name="sub_vpn">VPN · recommended</string>
+    <string name="sub_proxy">Wi-Fi proxy</string>
 
     <string name="web_loading">Loading tracker…</string>
     <string name="web_offline_title">No internet connection</string>
     <string name="web_offline_msg">Connect to the internet to open the tracker.</string>
     <string name="web_retry">Retry</string>
 
-    <string name="grabber_title">Summon Link Grabber</string>
-    <string name="vpn_hint">Log in to the game first (the game rejects the certificate only during login). Then tap Start VPN and, when asked, allow the VPN once. Open Summon → Record — the link is captured and copied. If it does not catch, re-open the history a couple of times.</string>
-    <string name="proxy_hint">Log in to the game first. Then tap Start, set a Manual Wi-Fi proxy to %1$s : %2$d, and open Summon → Record. Turn the proxy off in Wi-Fi settings when done.</string>
+    <string name="grabber_title">Import pulls</string>
 
-    <string name="start">Start</string>
     <string name="stop">Stop</string>
-    <string name="start_vpn">Start VPN capture</string>
-    <string name="stop_vpn">Stop VPN capture</string>
-    <string name="copy">Copy link</string>
-    <string name="open_tracker">Open in tracker</string>
-    <string name="status_idle">Stopped</string>
-    <string name="status_waiting">Capturing… open Summon → Record in the game</string>
-    <string name="status_found">Link captured and copied</string>
-    <string name="no_link">No link yet</string>
+    <string name="copy">Copy</string>
+    <string name="open_tracker">Import into tracker</string>
     <string name="notif_channel">Capture</string>
     <string name="notif_channel_found">Link found</string>
     <string name="db_saved">Database saved</string>
@@ -37,7 +28,6 @@
     <string name="action_cancel">Cancel</string>
     <string name="action_stop">Stop</string>
     <string name="copied">Copied to clipboard</string>
-    <string name="log_title">Log</string>
     <string name="clear_log">Clear</string>
 
     <string name="update_title">Update available: %1$s</string>
@@ -60,4 +50,24 @@
     <string name="widget_ends_in">ends in</string>
     <string name="widget_starts_in">starts in</string>
     <string name="widget_empty">Open the app once to load banners</string>
+    <string name="grabber_sub">Get the summon history link straight from the game</string>
+    <string name="step_login_title">Log in to the game</string>
+    <string name="step_login_sub">Do it before starting capture</string>
+    <string name="step_vpn_title">Start capture</string>
+    <string name="step_vpn_sub">Tap Start VPN in the notification and allow the VPN once</string>
+    <string name="step_proxy_title">Set the Wi-Fi proxy</string>
+    <string name="step_proxy_sub">Manual proxy %1$s : %2$d in Wi-Fi settings</string>
+    <string name="step_record_title">Open Summon → Record</string>
+    <string name="step_record_sub_vpn">The link is copied and imported into the tracker</string>
+    <string name="step_record_sub_proxy">Turn the proxy off in Wi-Fi settings when done</string>
+    <string name="status_off_title">Capture is off</string>
+    <string name="status_off_sub">Start it once you are logged in</string>
+    <string name="status_on_title">Capture is on</string>
+    <string name="status_on_sub">Waiting for the summon history… re-open it if nothing happens</string>
+    <string name="status_found_title">Link captured</string>
+    <string name="status_found_sub">Copied to the clipboard</string>
+    <string name="start_capture">Start capture</string>
+    <string name="open_game">Open Reverse: 1999</string>
+    <string name="link_title">Captured link</string>
+    <string name="log_count">Log (%1$d)</string>
 </resources>

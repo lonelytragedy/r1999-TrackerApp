@@ -35,6 +35,10 @@
     <color name="widget_plus_bg">#D8B46A</color>
     <color name="widget_plus_text">#17120C</color>
 
+    <color name="status_ok">#45C595</color>
+    <color name="status_ok_bg">#2945C595</color>
+    <color name="status_idle">#8C7F66</color>
+
     <color name="type_collab">#2ED6BE</color>
     <color name="type_water">#60AAFF</color>
     <color name="type_character">#C47FFF</color>

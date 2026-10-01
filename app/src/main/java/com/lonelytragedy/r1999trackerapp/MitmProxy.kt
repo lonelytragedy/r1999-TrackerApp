@@ -196,8 +196,6 @@ class MitmProxy(private val port: Int, private val onUrl: (String) -> Unit) {
         close(real)
     }
 
-    // Runs the upstream direction on the calling (pool) thread instead of
-    // spawning a second thread per connection.
     private fun relay(up: () -> Unit, down: () -> Unit) {
         val downThread = Thread(down)
         downThread.start()

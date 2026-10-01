@@ -24,7 +24,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.google.android.material.button.MaterialButtonToggleGroup
 import org.json.JSONObject
 import tun.proxy.service.Tun2HttpVpnService
 
@@ -34,6 +33,9 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_SHOW_LINK = "show_link"
         const val EXTRA_IMPORT_LINK = "import_link"
         const val GAME_PACKAGE = "com.bluepoch.m.en.reverse1999"
+        private const val STEP_TODO = 0
+        private const val STEP_CURRENT = 1
+        private const val STEP_DONE = 2
     }
 
     private val trackerUrl = "https://lonelytragedy.github.io/r1999-tracker/"
@@ -49,18 +51,29 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var trackerView: View
     private lateinit var grabberView: View
-    private lateinit var vpnSection: View
-    private lateinit var proxySection: View
 
+    private lateinit var subVpn: View
+    private lateinit var subProxy: View
+    private lateinit var step1: View
+    private lateinit var step2: View
+    private lateinit var step3: View
+    private lateinit var statusDot: View
+    private lateinit var statusTitle: TextView
     private lateinit var status: TextView
-    private lateinit var proxyInfo: TextView
+    private lateinit var stopBtn: View
+    private lateinit var primaryBtn: TextView
+    private lateinit var linkCard: View
     private lateinit var urlView: TextView
-    private lateinit var toggleBtn: Button
-    private lateinit var vpnBtn: Button
-    private lateinit var copyBtn: Button
-    private lateinit var openBtn: Button
-    private lateinit var clearBtn: Button
+    private lateinit var copyBtn: View
+    private lateinit var openBtn: View
+    private lateinit var logToggle: View
+    private lateinit var logChevron: View
+    private lateinit var logTitle: TextView
+    private lateinit var clearBtn: View
     private lateinit var logView: TextView
+
+    private var useVpn = true
+    private var webNavActive = false
 
     private lateinit var bottomNav: BottomNavigationView
 
@@ -69,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     private val drivePrefs by lazy { getSharedPreferences("drive", MODE_PRIVATE) }
+    private val appPrefs by lazy { getSharedPreferences("app", MODE_PRIVATE) }
     private val updatePrefs by lazy { getSharedPreferences("update", MODE_PRIVATE) }
 
     private val fileChooser =
@@ -120,7 +134,9 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (trackerView.visibility == View.VISIBLE && webview.canGoBack()) {
+                if (grabberView.visibility == View.VISIBLE) {
+                    bottomNav.selectedItemId = R.id.navTracker
+                } else if (trackerView.visibility == View.VISIBLE && webview.canGoBack()) {
                     webview.goBack()
                 } else {
                     isEnabled = false
@@ -183,16 +199,24 @@ class MainActivity : AppCompatActivity() {
 
         trackerView = findViewById(R.id.trackerView)
         grabberView = findViewById(R.id.grabberView)
-        vpnSection = findViewById(R.id.vpnSection)
-        proxySection = findViewById(R.id.proxySection)
 
+        subVpn = findViewById(R.id.subVpn)
+        subProxy = findViewById(R.id.subProxy)
+        step1 = findViewById(R.id.step1)
+        step2 = findViewById(R.id.step2)
+        step3 = findViewById(R.id.step3)
+        statusDot = findViewById(R.id.statusDot)
+        statusTitle = findViewById(R.id.statusTitle)
         status = findViewById(R.id.status)
-        proxyInfo = findViewById(R.id.proxyInfo)
+        stopBtn = findViewById(R.id.stopBtn)
+        primaryBtn = findViewById(R.id.primaryBtn)
+        linkCard = findViewById(R.id.linkCard)
         urlView = findViewById(R.id.urlView)
-        toggleBtn = findViewById(R.id.toggleBtn)
-        vpnBtn = findViewById(R.id.vpnBtn)
         copyBtn = findViewById(R.id.copyBtn)
         openBtn = findViewById(R.id.openBtn)
+        logToggle = findViewById(R.id.logToggle)
+        logChevron = findViewById(R.id.logChevron)
+        logTitle = findViewById(R.id.logTitle)
         clearBtn = findViewById(R.id.clearBtn)
         logView = findViewById(R.id.logView)
     }
@@ -204,17 +228,26 @@ class MainActivity : AppCompatActivity() {
             val tracker = item.itemId == R.id.navTracker
             trackerView.visibility = if (tracker) View.VISIBLE else View.GONE
             grabberView.visibility = if (tracker) View.GONE else View.VISIBLE
+            if (!tracker) refreshState()
+            updateNavVisibility()
             true
         }
 
-        val subTabs = findViewById<MaterialButtonToggleGroup>(R.id.subTabs)
-        subTabs.check(R.id.subVpn)
-        subTabs.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val vpn = checkedId == R.id.subVpn
-            vpnSection.visibility = if (vpn) View.VISIBLE else View.GONE
-            proxySection.visibility = if (vpn) View.GONE else View.VISIBLE
-        }
+        useVpn = appPrefs.getString("grabber_mode", "vpn") != "proxy"
+        subVpn.setOnClickListener { setCaptureMode(true) }
+        subProxy.setOnClickListener { setCaptureMode(false) }
+    }
+
+    private fun setCaptureMode(vpn: Boolean) {
+        if (useVpn == vpn) return
+        useVpn = vpn
+        appPrefs.edit().putString("grabber_mode", if (vpn) "vpn" else "proxy").apply()
+        refreshState()
+    }
+
+    private fun updateNavVisibility() {
+        val hide = trackerView.visibility == View.VISIBLE && webNavActive && webOverlay.visibility != View.VISIBLE
+        bottomNav.visibility = if (hide) View.GONE else View.VISIBLE
     }
 
     private fun setupWebView() {
@@ -240,6 +273,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 if (!pageErrored) {
                     webOverlay.visibility = View.GONE
+                    updateNavVisibility()
                     trackerLoaded = true
                     restoreDrive()
                     scheduleBanners()
@@ -289,6 +323,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadTracker() {
         pageErrored = false
         trackerLoaded = false
+        webNavActive = false
         showLoading()
         webview.loadUrl(trackerUrl)
     }
@@ -300,6 +335,7 @@ class MainActivity : AppCompatActivity() {
         webTitle.text = getString(R.string.web_loading)
         webMsg.visibility = View.GONE
         webRetry.visibility = View.GONE
+        updateNavVisibility()
     }
 
     private fun showOffline() {
@@ -310,6 +346,7 @@ class MainActivity : AppCompatActivity() {
         webMsg.text = getString(R.string.web_offline_msg)
         webMsg.visibility = View.VISIBLE
         webRetry.visibility = View.VISIBLE
+        updateNavVisibility()
     }
 
     private fun openExternal(url: String) {
@@ -320,23 +357,70 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupGrabber() {
-        proxyInfo.text = getString(R.string.proxy_hint, NetUtil.wifiIp(), ProxyService.PORT)
-
-        toggleBtn.setOnClickListener { toggle() }
-        vpnBtn.setOnClickListener { toggleVpn() }
+        primaryBtn.setOnClickListener { onPrimary() }
+        stopBtn.setOnClickListener { stopCapture() }
         copyBtn.setOnClickListener { copyLink() }
         openBtn.setOnClickListener { importIntoTracker() }
         clearBtn.setOnClickListener { Bus.clear() }
+        logToggle.setOnClickListener { toggleLog() }
 
         Bus.listener = { url -> runOnUiThread { showUrl(url) } }
         Bus.stateListener = { runOnUiThread { refreshState() } }
-        Bus.logListener = { runOnUiThread { logView.text = Bus.snapshot() } }
+        Bus.logListener = { runOnUiThread { updateLog() } }
+        updateLog()
+    }
+
+    private fun capturing(): Boolean = if (useVpn) Bus.vpnRunning else Bus.running
+
+    private fun onPrimary() {
+        when {
+            capturing() -> launchGame()
+            useVpn -> toggleVpn()
+            else -> toggle()
+        }
+    }
+
+    private fun stopCapture() {
+        if (Bus.vpnRunning) {
+            startService(Intent(this, Tun2HttpVpnService::class.java).setAction(Tun2HttpVpnService.ACTION_STOP))
+        }
+        if (Bus.running) stopService(Intent(this, ProxyService::class.java))
+    }
+
+    private fun toggleLog() {
+        val open = logView.visibility != View.VISIBLE
+        logView.visibility = if (open) View.VISIBLE else View.GONE
+        clearBtn.visibility = if (open) View.VISIBLE else View.GONE
+        logChevron.rotation = if (open) 0f else -90f
+    }
+
+    private fun updateLog() {
         logView.text = Bus.snapshot()
+        logTitle.text = getString(R.string.log_count, Bus.log.size)
+    }
+
+    private fun attrColor(attr: Int): Int {
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(attr, tv, true)
+        return tv.data
+    }
+
+    private fun setStep(step: View, number: Int, title: Int, sub: String, state: Int) {
+        val mark = step.findViewById<TextView>(R.id.stepMark)
+        step.findViewById<TextView>(R.id.stepTitle).setText(title)
+        step.findViewById<TextView>(R.id.stepSub).text = sub
+        val (bg, fg) = when (state) {
+            STEP_DONE -> ContextCompat.getColor(this, R.color.status_ok_bg) to ContextCompat.getColor(this, R.color.status_ok)
+            STEP_CURRENT -> attrColor(R.attr.appAccent) to attrColor(com.google.android.material.R.attr.colorOnPrimary)
+            else -> attrColor(R.attr.appStroke) to attrColor(R.attr.appTextMuted)
+        }
+        mark.text = if (state == STEP_DONE) "✓" else number.toString()
+        mark.backgroundTintList = android.content.res.ColorStateList.valueOf(bg)
+        mark.setTextColor(fg)
     }
 
     override fun onResume() {
         super.onResume()
-        proxyInfo.text = getString(R.string.proxy_hint, NetUtil.wifiIp(), ProxyService.PORT)
         refreshState()
         maybeAutoImport()
     }
@@ -395,18 +479,61 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshState() {
-        vpnBtn.text = getString(if (Bus.vpnRunning) R.string.stop_vpn else R.string.start_vpn)
-        toggleBtn.text = getString(if (Bus.running) R.string.stop else R.string.start)
-        status.text = if (Bus.vpnRunning || Bus.running) {
-            getString(R.string.status_waiting)
-        } else {
-            getString(R.string.status_idle)
+        subVpn.isSelected = useVpn
+        subProxy.isSelected = !useVpn
+
+        val running = capturing()
+        val url = Bus.lastUrl
+        val found = url != null && !running
+        val early = if (running || found) STEP_DONE else STEP_CURRENT
+        val middle = if (running || found) STEP_DONE else STEP_TODO
+        val last = when {
+            found -> STEP_DONE
+            running -> STEP_CURRENT
+            else -> STEP_TODO
         }
+        setStep(step1, 1, R.string.step_login_title, getString(R.string.step_login_sub), early)
+        if (useVpn) {
+            setStep(step2, 2, R.string.step_vpn_title, getString(R.string.step_vpn_sub), middle)
+            setStep(step3, 3, R.string.step_record_title, getString(R.string.step_record_sub_vpn), last)
+        } else {
+            setStep(step2, 2, R.string.step_proxy_title, getString(R.string.step_proxy_sub, NetUtil.wifiIp(), ProxyService.PORT), middle)
+            setStep(step3, 3, R.string.step_record_title, getString(R.string.step_record_sub_proxy), last)
+        }
+
+        val dot = when {
+            running -> attrColor(R.attr.appAccent)
+            found -> ContextCompat.getColor(this, R.color.status_ok)
+            else -> ContextCompat.getColor(this, R.color.status_idle)
+        }
+        statusDot.backgroundTintList = android.content.res.ColorStateList.valueOf(dot)
+        statusTitle.setText(
+            when {
+                running -> R.string.status_on_title
+                found -> R.string.status_found_title
+                else -> R.string.status_off_title
+            }
+        )
+        status.setText(
+            when {
+                running -> R.string.status_on_sub
+                found -> R.string.status_found_sub
+                else -> R.string.status_off_sub
+            }
+        )
+        stopBtn.visibility = if (running) View.VISIBLE else View.GONE
+
+        primaryBtn.setText(if (running) R.string.open_game else R.string.start_capture)
+        val play = if (running) ContextCompat.getDrawable(this, R.drawable.ic_play)?.mutate() else null
+        play?.setTint(attrColor(com.google.android.material.R.attr.colorOnPrimary))
+        primaryBtn.setCompoundDrawablesRelativeWithIntrinsicBounds(play, null, null, null)
+
+        linkCard.visibility = if (url != null) View.VISIBLE else View.GONE
+        urlView.text = url ?: ""
     }
 
     private fun showUrl(url: String) {
-        urlView.text = url
-        status.text = getString(R.string.status_found)
+        refreshState()
     }
 
     private fun copyLink() {
@@ -646,6 +773,19 @@ class MainActivity : AppCompatActivity() {
                 } catch (_: Exception) {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$workerBase/oauth/start")))
                 }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun showImport() {
+            runOnUiThread { bottomNav.selectedItemId = R.id.navGrabber }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun setWebNav(active: Boolean) {
+            runOnUiThread {
+                webNavActive = active
+                updateNavVisibility()
             }
         }
 
