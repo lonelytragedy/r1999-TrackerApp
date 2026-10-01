@@ -880,6 +880,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         @android.webkit.JavascriptInterface
+        fun setLang(lang: String) {
+            if (lang != "ru" && lang != "en") return
+            runOnUiThread {
+                val current = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+                val active = if (current.isEmpty) resources.configuration.locales[0].language else current[0]?.language
+                if (active == lang) return@runOnUiThread
+                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                    androidx.core.os.LocaleListCompat.forLanguageTags(lang)
+                )
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         fun setSection(section: String) {
             val id = SECTION_BY_NAV.entries.firstOrNull { it.value == section }?.key ?: return
             runOnUiThread {
