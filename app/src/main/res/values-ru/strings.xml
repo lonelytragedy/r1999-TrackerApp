@@ -60,4 +60,8 @@
     <string name="widget_ends_in">до конца</string>
     <string name="widget_starts_in">начало через</string>
     <string name="widget_empty">Откройте приложение, чтобы загрузить баннеры</string>
+    <string name="nav_overview">Обзор</string>
+    <string name="nav_banners">Баннеры</string>
+    <string name="nav_history">История</string>
+    <string name="nav_stats">Аналитика</string>
 </resources>

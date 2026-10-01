@@ -70,4 +70,8 @@
     <string name="open_game">Open Reverse: 1999</string>
     <string name="link_title">Captured link</string>
     <string name="log_count">Log (%1$d)</string>
+    <string name="nav_overview">Overview</string>
+    <string name="nav_banners">Banners</string>
+    <string name="nav_history">History</string>
+    <string name="nav_stats">Stats</string>
 </resources>

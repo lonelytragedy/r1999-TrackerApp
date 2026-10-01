@@ -349,17 +349,22 @@
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom"
+        android:layout_marginLeft="14dp"
+        android:layout_marginRight="14dp"
         android:layout_marginBottom="14dp"
         android:background="@drawable/nav_bg"
-        android:paddingLeft="6dp"
-        android:paddingRight="6dp"
         app:elevation="10dp"
         app:menu="@menu/bottom_nav"
-        app:itemIconSize="24dp"
+        app:itemIconSize="22dp"
         app:itemIconTint="@color/nav_item"
         app:itemTextColor="@color/nav_item"
-        app:labelVisibilityMode="unlabeled" />
+        app:itemPaddingTop="10dp"
+        app:itemPaddingBottom="8dp"
+        app:itemTextAppearanceActive="@style/NavLabel"
+        app:itemTextAppearanceInactive="@style/NavLabel"
+        app:itemActiveIndicatorStyle="@style/NavIndicator"
+        app:labelVisibilityMode="labeled" />
 </FrameLayout>

@@ -1,10 +1,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/navTracker"
-        android:icon="@drawable/ic_tab_tracker"
-        android:title="@string/tab_tracker" />
+        android:id="@+id/navOverview"
+        android:icon="@drawable/ic_nav_overview"
+        android:title="@string/nav_overview" />
+    <item
+        android:id="@+id/navBanners"
+        android:icon="@drawable/ic_nav_banners"
+        android:title="@string/nav_banners" />
+    <item
+        android:id="@+id/navHistory"
+        android:icon="@drawable/ic_nav_history"
+        android:title="@string/nav_history" />
+    <item
+        android:id="@+id/navStats"
+        android:icon="@drawable/ic_nav_stats"
+        android:title="@string/nav_stats" />
     <item
         android:id="@+id/navGrabber"
-        android:icon="@drawable/ic_tab_grabber"
+        android:icon="@drawable/ic_nav_import"
         android:title="@string/tab_grabber" />
 </menu>

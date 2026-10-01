@@ -36,6 +36,12 @@ class MainActivity : AppCompatActivity() {
         private const val STEP_TODO = 0
         private const val STEP_CURRENT = 1
         private const val STEP_DONE = 2
+        private val SECTION_BY_NAV = mapOf(
+            R.id.navOverview to "top",
+            R.id.navBanners to "bannerTimelineBox",
+            R.id.navHistory to "historyBox",
+            R.id.navStats to "statsBox",
+        )
     }
 
     private val trackerUrl = "https://lonelytragedy.github.io/r1999-tracker/"
@@ -73,7 +79,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var logView: TextView
 
     private var useVpn = true
-    private var webNavActive = false
+    private var syncingNav = false
+    private var currentSection = R.id.navOverview
 
     private lateinit var bottomNav: BottomNavigationView
 
@@ -135,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (grabberView.visibility == View.VISIBLE) {
-                    bottomNav.selectedItemId = R.id.navTracker
+                    showTrackerTab()
                 } else if (trackerView.visibility == View.VISIBLE && webview.canGoBack()) {
                     webview.goBack()
                 } else {
@@ -159,7 +166,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_IMPORT_LINK, false) == true) {
-            bottomNav.selectedItemId = R.id.navTracker
+            showTrackerTab()
             maybeAutoImport()
             return
         }
@@ -172,7 +179,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleOAuthRedirect(intent: Intent?) {
         val data = intent?.data ?: return
         if (data.scheme != "reverse1999tracker") return
-        bottomNav.selectedItemId = R.id.navTracker
+        showTrackerTab()
         val error = data.getQueryParameter("error")
         val refresh = data.getQueryParameter("refresh_token")
         if (error != null || refresh.isNullOrEmpty()) {
@@ -223,14 +230,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupTabs() {
         bottomNav = findViewById(R.id.bottomNav)
-        bottomNav.selectedItemId = R.id.navTracker
         bottomNav.setOnItemSelectedListener { item ->
-            val tracker = item.itemId == R.id.navTracker
+            val tracker = item.itemId != R.id.navGrabber
             trackerView.visibility = if (tracker) View.VISIBLE else View.GONE
             grabberView.visibility = if (tracker) View.GONE else View.VISIBLE
-            if (!tracker) refreshState()
-            updateNavVisibility()
+            if (tracker) {
+                currentSection = item.itemId
+                if (!syncingNav) scrollTracker(item.itemId)
+            } else {
+                refreshState()
+            }
             true
+        }
+        bottomNav.setOnItemReselectedListener { item ->
+            if (item.itemId != R.id.navGrabber) scrollTracker(item.itemId)
         }
 
         useVpn = appPrefs.getString("grabber_mode", "vpn") != "proxy"
@@ -245,9 +258,19 @@ class MainActivity : AppCompatActivity() {
         refreshState()
     }
 
-    private fun updateNavVisibility() {
-        val hide = trackerView.visibility == View.VISIBLE && webNavActive && webOverlay.visibility != View.VISIBLE
-        bottomNav.visibility = if (hide) View.GONE else View.VISIBLE
+    private fun selectNav(id: Int) {
+        syncingNav = true
+        bottomNav.selectedItemId = id
+        syncingNav = false
+    }
+
+    private fun showTrackerTab() {
+        selectNav(currentSection)
+    }
+
+    private fun scrollTracker(itemId: Int) {
+        val section = SECTION_BY_NAV[itemId] ?: return
+        webview.evaluateJavascript("window.trackerScrollTo && window.trackerScrollTo('$section')", null)
     }
 
     private fun setupWebView() {
@@ -273,7 +296,6 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 if (!pageErrored) {
                     webOverlay.visibility = View.GONE
-                    updateNavVisibility()
                     trackerLoaded = true
                     restoreDrive()
                     scheduleBanners()
@@ -323,7 +345,6 @@ class MainActivity : AppCompatActivity() {
     private fun loadTracker() {
         pageErrored = false
         trackerLoaded = false
-        webNavActive = false
         showLoading()
         webview.loadUrl(trackerUrl)
     }
@@ -335,7 +356,6 @@ class MainActivity : AppCompatActivity() {
         webTitle.text = getString(R.string.web_loading)
         webMsg.visibility = View.GONE
         webRetry.visibility = View.GONE
-        updateNavVisibility()
     }
 
     private fun showOffline() {
@@ -346,7 +366,6 @@ class MainActivity : AppCompatActivity() {
         webMsg.text = getString(R.string.web_offline_msg)
         webMsg.visibility = View.VISIBLE
         webRetry.visibility = View.VISIBLE
-        updateNavVisibility()
     }
 
     private fun openExternal(url: String) {
@@ -545,7 +564,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun importIntoTracker() {
         val url = Bus.lastUrl ?: return
-        bottomNav.selectedItemId = R.id.navTracker
+        showTrackerTab()
         importUrl(url)
     }
 
@@ -553,7 +572,7 @@ class MainActivity : AppCompatActivity() {
         val url = Bus.pendingImportUrl ?: return
         if (!trackerLoaded) return
         Bus.pendingImportUrl = null
-        bottomNav.selectedItemId = R.id.navTracker
+        showTrackerTab()
         importUrl(url)
     }
 
@@ -782,10 +801,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         @android.webkit.JavascriptInterface
-        fun setWebNav(active: Boolean) {
+        fun setSection(section: String) {
+            val id = SECTION_BY_NAV.entries.firstOrNull { it.value == section }?.key ?: return
             runOnUiThread {
-                webNavActive = active
-                updateNavVisibility()
+                currentSection = id
+                if (trackerView.visibility == View.VISIBLE) selectNav(id)
             }
         }
 
