@@ -22,3 +22,9 @@ copyright and license headers are retained inside the source files.
 The `tun.proxy.service.Tun2HttpVpnService` and `tun.utils.Util` classes are a
 reimplementation of the VpnService glue needed to drive that engine, kept in the
 original package names so the engine's JNI symbols resolve.
+
+## Lucide icons
+
+The navigation and screen icons in `app/src/main/res/drawable/ic_nav_*.xml`,
+`ic_play.xml` and `ic_chevron.xml` are converted from Lucide
+(https://lucide.dev), ISC License. See `LICENSE-lucide.txt`.
