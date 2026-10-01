@@ -5,6 +5,6 @@ import android.widget.RemoteViewsService
 
 class BannerWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        return BannerWidgetFactory(applicationContext)
+        return BannerWidgetFactory(applicationContext, intent)
     }
 }

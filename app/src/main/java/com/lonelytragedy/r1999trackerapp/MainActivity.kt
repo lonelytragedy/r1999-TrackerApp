@@ -114,6 +114,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    private var pendingUpdateUrl: String? = null
+
+    private val installPermission =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { onInstallSettingsClosed() }
+
     private val notifPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -694,36 +699,73 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startUpdate(url: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
-            Toast.makeText(this, R.string.update_allow_installs, Toast.LENGTH_LONG).show()
-            try {
-                startActivity(
-                    Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
-                )
-            } catch (_: Exception) {
-            }
+        pendingUpdateUrl = url
+        if (packageManager.canRequestPackageInstalls()) {
+            downloadAndInstall(url)
             return
         }
-        downloadAndInstall(url)
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.update_perm_title)
+            .setMessage(R.string.update_perm_msg)
+            .setPositiveButton(R.string.update_open_settings) { _, _ -> openInstallSettings() }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
+    }
+
+    private fun openInstallSettings() {
+        try {
+            installPermission.launch(
+                Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
+            )
+        } catch (_: Exception) {
+            showPermissionDenied()
+        }
+    }
+
+    private fun onInstallSettingsClosed() {
+        val url = pendingUpdateUrl ?: return
+        if (packageManager.canRequestPackageInstalls()) downloadAndInstall(url) else showPermissionDenied()
+    }
+
+    private fun showPermissionDenied() {
+        if (isFinishing || isDestroyed) return
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.update_perm_title)
+            .setMessage(R.string.update_perm_denied)
+            .setPositiveButton(R.string.update_open_settings) { _, _ -> openInstallSettings() }
+            .setNeutralButton(R.string.update_manual) { _, _ ->
+                openExternal("https://github.com/lonelytragedy/r1999-TrackerApp/releases/latest")
+            }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
     }
 
     private fun downloadAndInstall(url: String) {
-        val bar = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
-        val label = TextView(this).apply { setPadding(0, 0, 0, 20) }
+        val bar = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            isIndeterminate = true
+        }
+        val label = TextView(this).apply {
+            setPadding(0, 0, 0, 20)
+            text = getString(R.string.update_connecting)
+        }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(56, 40, 56, 12)
             addView(label)
             addView(bar)
         }
+        val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(R.string.update_downloading)
             .setView(box)
             .setCancelable(false)
+            .setNegativeButton(android.R.string.cancel) { _, _ -> cancelled.set(true) }
             .create()
         dialog.show()
 
         Thread {
+            val apk = java.io.File(cacheDir, "update.apk")
             try {
                 val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
                 conn.instanceFollowRedirects = true
@@ -731,31 +773,63 @@ class MainActivity : AppCompatActivity() {
                 conn.connectTimeout = 15000
                 conn.readTimeout = 30000
                 conn.connect()
+                if (conn.responseCode != 200) throw java.io.IOException("HTTP ${conn.responseCode}")
                 val total = conn.contentLengthLong
-                val apk = java.io.File(cacheDir, "update.apk")
+                val totalMb = if (total > 0) "%.1f".format(total / 1048576.0) else ""
                 conn.inputStream.use { input ->
                     java.io.FileOutputStream(apk).use { out ->
-                        val buf = ByteArray(16384)
+                        val buf = ByteArray(32768)
                         var read: Int
                         var sum = 0L
+                        var lastPct = -1
                         while (input.read(buf).also { read = it } != -1) {
+                            if (cancelled.get()) throw InterruptedException()
                             out.write(buf, 0, read)
                             sum += read
                             if (total > 0) {
                                 val pct = (sum * 100 / total).toInt()
-                                runOnUiThread { bar.progress = pct; label.text = "$pct%" }
+                                if (pct != lastPct) {
+                                    lastPct = pct
+                                    val done = "%.1f".format(sum / 1048576.0)
+                                    runOnUiThread {
+                                        bar.isIndeterminate = false
+                                        bar.progress = pct
+                                        label.text = getString(R.string.update_progress, done, totalMb, pct)
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                runOnUiThread { dialog.dismiss(); installApk(apk) }
-            } catch (e: Exception) {
+                if (cancelled.get()) throw InterruptedException()
                 runOnUiThread {
                     dialog.dismiss()
-                    Toast.makeText(this, getString(R.string.update_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
+                    pendingUpdateUrl = null
+                    installApk(apk)
+                }
+            } catch (_: InterruptedException) {
+                apk.delete()
+            } catch (e: Exception) {
+                apk.delete()
+                runOnUiThread {
+                    dialog.dismiss()
+                    showDownloadFailed(url, e.message ?: "")
                 }
             }
         }.start()
+    }
+
+    private fun showDownloadFailed(url: String, reason: String) {
+        if (isFinishing || isDestroyed) return
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.update_failed_title)
+            .setMessage(getString(R.string.update_failed, reason))
+            .setPositiveButton(R.string.update_retry) { _, _ -> downloadAndInstall(url) }
+            .setNeutralButton(R.string.update_manual) { _, _ ->
+                openExternal("https://github.com/lonelytragedy/r1999-TrackerApp/releases/latest")
+            }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
     }
 
     private fun installApk(apk: java.io.File) {
@@ -825,6 +899,7 @@ class MainActivity : AppCompatActivity() {
             val prefs = getSharedPreferences("app", MODE_PRIVATE)
             if (prefs.getString("skin", "reversed") == s) return
             prefs.edit().putString("skin", s).apply()
+            BannerWidgetProvider.refresh(this@MainActivity)
             runOnUiThread { recreate() }
         }
     }

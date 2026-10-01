@@ -9,19 +9,23 @@
     <color name="warm_accent">#E0913F</color>
     <color name="warm_log">#8FE39A</color>
     <color name="warm_log_bg">#0A0704</color>
-    <color name="warm_nav_bg">#E62A2015</color>
+    <color name="warm_nav_bg">#F01A140D</color>
 
-    <color name="cool_bg_page">#0B0E24</color>
-    <color name="cool_bg_surface">#151A3A</color>
-    <color name="cool_stroke">#2A3070</color>
-    <color name="cool_text_primary">#E4E7F5</color>
-    <color name="cool_text_muted">#9AA0C6</color>
-    <color name="cool_accent">#7B8CFF</color>
+    <color name="cool_bg_page">#0D0F14</color>
+    <color name="cool_bg_surface">#1A1E26</color>
+    <color name="cool_stroke">#2B303A</color>
+    <color name="cool_text_primary">#E7E9EE</color>
+    <color name="cool_text_muted">#9AA0AD</color>
+    <color name="cool_accent">#7C8CFF</color>
     <color name="cool_log">#8FE39A</color>
-    <color name="cool_log_bg">#0A0C1E</color>
-    <color name="cool_nav_checked">#8FA0FF</color>
-    <color name="cool_nav_bg">#151A3A</color>
+    <color name="cool_log_bg">#0A0C11</color>
+    <color name="cool_nav_checked">#8EA2FF</color>
+    <color name="cool_nav_bg">#F014171D</color>
 
+    <color name="widget_cool_card">#14171D</color>
+    <color name="widget_cool_accent">#8EA2FF</color>
+    <color name="widget_cool_name">#E7E9EE</color>
+    <color name="widget_cool_muted">#9AA0AD</color>
     <color name="widget_card">#17120C</color>
     <color name="widget_gold">#C8A24E</color>
     <color name="widget_name">#F2ECD8</color>

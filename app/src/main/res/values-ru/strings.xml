@@ -49,8 +49,7 @@
     <string name="update_later">Напомнить позже</string>
     <string name="update_skip">Пропустить эту версию</string>
     <string name="update_downloading">Скачиваем обновление…</string>
-    <string name="update_allow_installs">Разрешите установку обновлений и снова нажмите «Обновить»</string>
-    <string name="update_failed">Не удалось обновить: %1$s</string>
+    <string name="update_failed">Не удалось скачать обновление: %1$s</string>
     <string name="battery_hint">Разрешите приложению работать в фоне, чтобы система не прерывала перехват.</string>
     <string name="banner_notif_channel">Напоминания о баннерах</string>
     <string name="banner_notif_title">Новый баннер!</string>
@@ -64,4 +63,16 @@
     <string name="nav_banners">Баннеры</string>
     <string name="nav_history">История</string>
     <string name="nav_stats">Аналитика</string>
+    <string name="widget_unit_day">д</string>
+    <string name="widget_unit_hour">ч</string>
+    <string name="widget_unit_min">м</string>
+    <string name="update_perm_title">Разрешите установку обновлений</string>
+    <string name="update_perm_msg">Чтобы установить обновление, Android должен разрешить Reverse: Tracker устанавливать приложения.\n\nОткроются настройки: включите «Разрешить из этого источника» и вернитесь назад. Загрузка начнётся сама.</string>
+    <string name="update_open_settings">Открыть настройки</string>
+    <string name="update_perm_denied">Разрешение всё ещё выключено, поэтому приложение не может установить обновление. Включите его в настройках или скачайте обновление вручную со страницы релиза.</string>
+    <string name="update_manual">Скачать вручную</string>
+    <string name="update_connecting">Подключение…</string>
+    <string name="update_progress">%1$s из %2$s МБ · %3$d%%</string>
+    <string name="update_failed_title">Не удалось скачать</string>
+    <string name="update_retry">Повторить</string>
 </resources>
