@@ -382,6 +382,7 @@ class MainActivity : AppCompatActivity() {
         openBtn.setOnClickListener { importIntoTracker() }
         clearBtn.setOnClickListener { Bus.clear() }
         logToggle.setOnClickListener { toggleLog() }
+        findViewById<View>(R.id.logCard).clipToOutline = true
 
         Bus.listener = { url -> runOnUiThread { showUrl(url) } }
         Bus.stateListener = { runOnUiThread { refreshState() } }

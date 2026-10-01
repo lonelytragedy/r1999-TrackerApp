@@ -282,11 +282,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/logCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_card"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="1dp">
 
                 <LinearLayout
                     android:id="@+id/logToggle"
