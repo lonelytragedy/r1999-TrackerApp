@@ -252,7 +252,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setCaptureMode(vpn: Boolean) {
-        if (useVpn == vpn) return
+        if (useVpn == vpn || Bus.vpnRunning || Bus.running) return
         useVpn = vpn
         appPrefs.edit().putString("grabber_mode", if (vpn) "vpn" else "proxy").apply()
         refreshState()
@@ -499,6 +499,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshState() {
+        if (Bus.vpnRunning) useVpn = true else if (Bus.running) useVpn = false
+        val locked = Bus.vpnRunning || Bus.running
+        subVpn.alpha = if (locked && !useVpn) 0.4f else 1f
+        subProxy.alpha = if (locked && useVpn) 0.4f else 1f
         subVpn.isSelected = useVpn
         subProxy.isSelected = !useVpn
 
