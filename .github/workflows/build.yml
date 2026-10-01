@@ -3,6 +3,15 @@ name: build
 on:
   push:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Publish a release with this tag, e.g. v1.15 (leave empty to only build)"
+        required: false
+        default: ""
+      release_notes:
+        description: "Release notes"
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -49,3 +58,14 @@ jobs:
           git tag -l --format='%(contents)' "$GITHUB_REF_NAME" > release-notes.md
           cp app/build/outputs/apk/debug/app-debug.apk Reverse1999TrackerApp.apk
           gh release create "$GITHUB_REF_NAME" Reverse1999TrackerApp.apk --title "$GITHUB_REF_NAME" --notes-file release-notes.md --latest
+
+      - name: Publish release from manual run
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+          NOTES: ${{ inputs.release_notes }}
+        run: |
+          printf '%s\n' "$NOTES" > release-notes.md
+          cp app/build/outputs/apk/debug/app-debug.apk Reverse1999TrackerApp.apk
+          gh release create "$TAG" Reverse1999TrackerApp.apk --target "$GITHUB_SHA" --title "$TAG" --notes-file release-notes.md --latest
