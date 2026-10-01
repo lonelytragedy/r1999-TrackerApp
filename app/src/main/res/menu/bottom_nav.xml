@@ -8,13 +8,13 @@
         android:icon="@drawable/ic_nav_banners"
         android:title="@string/nav_banners" />
     <item
-        android:id="@+id/navHistory"
-        android:icon="@drawable/ic_nav_history"
-        android:title="@string/nav_history" />
-    <item
         android:id="@+id/navStats"
         android:icon="@drawable/ic_nav_stats"
         android:title="@string/nav_stats" />
+    <item
+        android:id="@+id/navHistory"
+        android:icon="@drawable/ic_nav_history"
+        android:title="@string/nav_history" />
     <item
         android:id="@+id/navGrabber"
         android:icon="@drawable/ic_nav_import"
