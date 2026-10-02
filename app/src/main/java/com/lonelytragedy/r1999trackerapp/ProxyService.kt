@@ -24,6 +24,7 @@ class ProxyService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Bus.attachCapture(this)
         createChannel()
     }
 

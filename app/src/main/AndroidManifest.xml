@@ -89,11 +89,13 @@
         <service
             android:name=".ProxyService"
             android:exported="false"
+            android:process=":capture"
             android:foregroundServiceType="dataSync" />
 
         <service
             android:name="tun.proxy.service.Tun2HttpVpnService"
             android:exported="false"
+            android:process=":capture"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="dataSync">
             <intent-filter>

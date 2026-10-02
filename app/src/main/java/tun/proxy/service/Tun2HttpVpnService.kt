@@ -51,6 +51,7 @@ class Tun2HttpVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
+        Bus.attachCapture(this)
         createChannel()
         jni_init()
     }
@@ -59,21 +60,45 @@ class Tun2HttpVpnService : VpnService() {
         when (intent?.action) {
             ACTION_STOP -> {
                 setWasCapturing(false)
+                setArmed(false)
                 stopEverything()
+                stopForegroundCompat()
                 stopSelf()
                 return START_NOT_STICKY
             }
-            ACTION_ENABLE -> enable()
+            ACTION_ENABLE -> {
+                startForegroundCompat(capturingNotification())
+                enable()
+            }
             ACTION_ARM -> arm()
-            else -> {
-                arm()
-                if (wasCapturing()) {
+            else -> when {
+                wasCapturing() -> {
+                    startForegroundCompat(capturingNotification())
                     Bus.logLine("service restarted — resuming capture")
                     enable()
+                }
+                isArmed() -> {
+                    Bus.logLine("service restarted — still waiting for Start VPN")
+                    arm()
+                }
+                else -> {
+                    stopSelf()
+                    return START_NOT_STICKY
                 }
             }
         }
         return START_STICKY
+    }
+
+    private fun setArmed(v: Boolean) {
+        getSharedPreferences("vpn", MODE_PRIVATE).edit().putBoolean("armed", v).apply()
+    }
+
+    private fun isArmed(): Boolean =
+        getSharedPreferences("vpn", MODE_PRIVATE).getBoolean("armed", false)
+
+    private fun stopForegroundCompat() {
+        try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (_: Exception) {}
     }
 
     private fun setWasCapturing(v: Boolean) {
@@ -86,6 +111,8 @@ class Tun2HttpVpnService : VpnService() {
     private fun arm() {
         capturing = false
         stopping = false
+        setArmed(true)
+        Bus.lastUrl = null
         Bus.vpnRunning = true
         Bus.emitState()
         startForegroundCompat(armedNotification())
@@ -100,6 +127,7 @@ class Tun2HttpVpnService : VpnService() {
             vpn = pfd
             jni_start(pfd.fd, false, 3, "127.0.0.1", PROXY_PORT)
             capturing = true
+            setArmed(false)
             Bus.vpnRunning = true
             Bus.emitState()
             setWasCapturing(true)
@@ -108,7 +136,9 @@ class Tun2HttpVpnService : VpnService() {
         } catch (ex: Throwable) {
             Bus.logLine("VPN start failed: ${ex.message ?: ex.javaClass.simpleName}")
             setWasCapturing(false)
+            setArmed(false)
             stopEverything()
+            stopForegroundCompat()
             stopSelf()
         }
     }
@@ -121,6 +151,7 @@ class Tun2HttpVpnService : VpnService() {
 
     override fun onRevoke() {
         setWasCapturing(false)
+        setArmed(false)
         stopEverything()
         stopSelf()
         super.onRevoke()
@@ -176,6 +207,7 @@ class Tun2HttpVpnService : VpnService() {
         if (!stopping) {
             stopping = true
             setWasCapturing(false)
+            setArmed(false)
             Bus.logLine("link captured — stopping VPN")
             handler.postDelayed({
                 stopEverything()

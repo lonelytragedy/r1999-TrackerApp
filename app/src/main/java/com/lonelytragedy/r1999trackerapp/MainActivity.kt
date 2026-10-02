@@ -133,6 +133,7 @@ class MainActivity : AppCompatActivity() {
             setTheme(R.style.Theme_R1999TrackerApp_Classic)
         }
         setContentView(R.layout.activity_main)
+        Bus.attachUi(this)
 
         bindViews()
         setupWebView()
@@ -312,6 +313,11 @@ class MainActivity : AppCompatActivity() {
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (request.isForMainFrame) showOffline()
             }
+
+            override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                if (view === webview) window.decorView.post { recreateWebView() }
+                return true
+            }
         }
         webview.webChromeClient = object : WebChromeClient() {
             override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: android.os.Message): Boolean {
@@ -319,6 +325,11 @@ class MainActivity : AppCompatActivity() {
                 tmp.webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(v: WebView, req: WebResourceRequest): Boolean {
                         openExternal(req.url.toString())
+                        return true
+                    }
+
+                    override fun onRenderProcessGone(v: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                        v.destroy()
                         return true
                     }
                 }
@@ -345,6 +356,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webRetry.setOnClickListener { loadTracker() }
+    }
+
+    private fun recreateWebView() {
+        if (isFinishing || isDestroyed) return
+        val old = webview
+        val parent = old.parent as android.view.ViewGroup
+        val index = parent.indexOfChild(old)
+        val params = old.layoutParams
+        parent.removeView(old)
+        try { old.destroy() } catch (_: Throwable) {}
+        webview = WebView(this).apply { id = R.id.webview }
+        parent.addView(webview, index, params)
+        setupWebView()
+        loadTracker()
     }
 
     private fun loadTracker() {
@@ -442,6 +467,21 @@ class MainActivity : AppCompatActivity() {
         mark.text = if (state == STEP_DONE) "✓" else number.toString()
         mark.backgroundTintList = android.content.res.ColorStateList.valueOf(bg)
         mark.setTextColor(fg)
+    }
+
+    private val captureReceiver = Bus.uiReceiver()
+
+    override fun onStart() {
+        super.onStart()
+        androidx.core.content.ContextCompat.registerReceiver(
+            this, captureReceiver, Bus.uiFilter(), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        Bus.requestState(this)
+    }
+
+    override fun onStop() {
+        try { unregisterReceiver(captureReceiver) } catch (_: Exception) {}
+        super.onStop()
     }
 
     override fun onResume() {
