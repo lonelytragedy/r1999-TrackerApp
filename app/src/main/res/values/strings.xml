@@ -31,7 +31,7 @@
     <string name="clear_log">Clear</string>
 
     <string name="update_title">Update available: %1$s</string>
-    <string name="update_msg">A newer version of the app is available. Update now?</string>
+    <string name="update_msg">The update downloads right here and installs over the current version. Your history stays in place.</string>
     <string name="update_now">Update</string>
     <string name="update_later">Remind me later</string>
     <string name="update_skip">Skip this version</string>
@@ -85,4 +85,9 @@
     <string name="update_progress">%1$s of %2$s MB · %3$d%%</string>
     <string name="update_failed_title">Download failed</string>
     <string name="update_retry">Try again</string>
+    <string name="update_ready">New version is ready</string>
+    <string name="update_versions">%1$s → %2$s</string>
+    <string name="update_whats_new">What\'s new</string>
+    <string name="banner_end_title">Banner ends in 24 hours</string>
+    <string name="banner_end_title_multi">Banners end in 24 hours</string>
 </resources>

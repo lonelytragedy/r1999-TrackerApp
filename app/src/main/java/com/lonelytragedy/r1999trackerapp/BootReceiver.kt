@@ -7,5 +7,6 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         BannerScheduler.reschedule(ctx)
+        BannerSyncWorker.enqueue(ctx)
     }
 }

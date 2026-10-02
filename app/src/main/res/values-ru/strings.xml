@@ -44,7 +44,7 @@
     <string name="action_stop">Стоп</string>
     <string name="copied">Скопировано в буфер обмена</string>
     <string name="update_title">Доступно обновление: %1$s</string>
-    <string name="update_msg">Вышла новая версия приложения. Обновить сейчас?</string>
+    <string name="update_msg">Обновление скачается прямо здесь и установится поверх текущей версии. История останется на месте.</string>
     <string name="update_now">Обновить</string>
     <string name="update_later">Напомнить позже</string>
     <string name="update_skip">Пропустить эту версию</string>
@@ -75,4 +75,9 @@
     <string name="update_progress">%1$s из %2$s МБ · %3$d%%</string>
     <string name="update_failed_title">Не удалось скачать</string>
     <string name="update_retry">Повторить</string>
+    <string name="update_ready">Новая версия готова</string>
+    <string name="update_versions">%1$s → %2$s</string>
+    <string name="update_whats_new">Что нового</string>
+    <string name="banner_end_title">Баннер закончится через 24 часа</string>
+    <string name="banner_end_title_multi">Баннеры закончатся через 24 часа</string>
 </resources>

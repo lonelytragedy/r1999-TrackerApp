@@ -14,6 +14,46 @@
         <item name="colorOnPrimary">#1A1109</item>
         <item name="android:windowBackground">?attr/appBgPage</item>
         <item name="android:statusBarColor">?attr/appBgPage</item>
+        <item name="alertDialogTheme">@style/AppDialog</item>
+        <item name="materialAlertDialogTheme">@style/AppDialog</item>
+    </style>
+
+    <style name="AppDialog" parent="ThemeOverlay.Material3.Dialog.Alert">
+        <item name="shapeAppearanceCornerExtraLarge">@style/AppDialog.Shape</item>
+        <item name="colorSurface">?attr/appBgSurface</item>
+        <item name="colorSurfaceContainerHigh">?attr/appBgSurface</item>
+        <item name="colorOnSurface">?attr/appTextPrimary</item>
+        <item name="colorOnSurfaceVariant">?attr/appTextMuted</item>
+        <item name="android:textColorPrimary">?attr/appTextPrimary</item>
+        <item name="android:textColorSecondary">?attr/appTextMuted</item>
+        <item name="android:textColorAlertDialogListItem">?attr/appTextPrimary</item>
+        <item name="colorPrimary">?attr/appAccent</item>
+        <item name="colorAccent">?attr/appAccent</item>
+        <item name="android:colorAccent">?attr/appAccent</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/AppDialog.Title</item>
+        <item name="buttonBarPositiveButtonStyle">@style/AppDialog.Button</item>
+        <item name="buttonBarNegativeButtonStyle">@style/AppDialog.Button.Muted</item>
+        <item name="buttonBarNeutralButtonStyle">@style/AppDialog.Button.Muted</item>
+    </style>
+
+    <style name="AppDialog.Shape" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+
+    <style name="AppDialog.Title" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textColor">?attr/appTextPrimary</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="AppDialog.Button" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">?attr/appAccent</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="AppDialog.Button.Muted">
+        <item name="android:textColor">?attr/appTextMuted</item>
     </style>
 
     <style name="Theme.R1999TrackerApp.Classic">

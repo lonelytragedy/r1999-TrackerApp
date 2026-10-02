@@ -141,6 +141,7 @@ class MainActivity : AppCompatActivity() {
         setupGrabber()
 
         maybeRequestNotifications()
+        BannerSyncWorker.enqueue(this)
         refreshState()
         Bus.lastUrl?.let { showUrl(it) }
         loadTracker()
@@ -304,8 +305,7 @@ class MainActivity : AppCompatActivity() {
                     webOverlay.visibility = View.GONE
                     trackerLoaded = true
                     restoreDrive()
-                    scheduleBanners()
-                    pushWidgetData()
+                    syncBanners()
                     maybeAutoImport()
                 }
             }
@@ -633,46 +633,8 @@ class MainActivity : AppCompatActivity() {
         webview.post { webview.evaluateJavascript(js, null) }
     }
 
-    private fun scheduleBanners() {
-        val js = """
-        (function(){
-          try{
-            if(typeof ACTIVE_BANNERS==='undefined')return '[]';
-            var now=Date.now();var map={};
-            ACTIVE_BANNERS.forEach(function(b){
-              var t=Date.parse(b.startUTC); if(isNaN(t)||t<=now)return;
-              var info=(typeof BANNERS!=='undefined'&&BANNERS[b.key])||{};
-              var name=info.name||b.key; var water=info.type==='Water';
-              var r6=(!water&&info.rateUp6)?info.rateUp6:[];
-              (map[t]=map[t]||[]).push({name:name,water:water,rate6:r6});
-            });
-            return JSON.stringify(Object.keys(map).map(function(k){return {at:Number(k),banners:map[k]};}));
-          }catch(e){return '[]';}
-        })()
-        """.trimIndent()
-        webview.evaluateJavascript(js) { raw -> BannerScheduler.schedule(this, raw) }
-    }
-
-    private fun pushWidgetData() {
-        val js = """
-        (function(){
-          try{
-            if(typeof ACTIVE_BANNERS==='undefined')return '[]';
-            var now=Date.now();var out=[];
-            ACTIVE_BANNERS.forEach(function(b){
-              if(!b.startUTC||!b.endUTC)return;
-              var s=Date.parse(b.startUTC),e=Date.parse(b.endUTC);
-              if(isNaN(s)||isNaN(e)||e<=now)return;
-              var info=(typeof BANNERS!=='undefined'&&BANNERS[b.key])||{};
-              var name=info.name||b.key;var type=info.type||'';
-              var r=(info.rateUp6&&info.rateUp6.length)?info.rateUp6:(b.rateUp||[]);
-              out.push({name:name,type:type,rate:r,image:b.image||'',start:s,end:e});
-            });
-            return JSON.stringify(out);
-          }catch(err){return '[]';}
-        })()
-        """.trimIndent()
-        webview.evaluateJavascript(js) { raw -> BannerWidgetProvider.pushData(this, raw) }
+    private fun syncBanners() {
+        webview.evaluateJavascript(BannerScripts.EXTRACT) { raw -> BannerScheduler.update(this, raw) }
     }
 
     private fun checkForUpdate() {
@@ -705,7 +667,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-                runOnUiThread { showUpdateDialog(tag, apkUrl, page) }
+                val notes = obj.optString("body")
+                runOnUiThread { showUpdateDialog(tag, apkUrl, page, notes) }
             } catch (_: Exception) {
             }
         }.start()
@@ -722,20 +685,47 @@ class MainActivity : AppCompatActivity() {
         return 0
     }
 
-    private fun showUpdateDialog(tag: String, apkUrl: String, page: String) {
+    private fun showUpdateDialog(tag: String, apkUrl: String, page: String, notes: String) {
         if (isFinishing || isDestroyed) return
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.update_title, tag))
-            .setMessage(getString(R.string.update_msg))
-            .setPositiveButton(R.string.update_now) { _, _ ->
-                if (apkUrl.isNotEmpty()) startUpdate(apkUrl)
-                else openExternal(if (page.isNotEmpty()) page else "https://github.com/lonelytragedy/r1999-TrackerApp/releases/latest")
+        val view = layoutInflater.inflate(R.layout.dialog_update, null)
+        val current = packageManager.getPackageInfo(packageName, 0).versionName ?: ""
+        view.findViewById<TextView>(R.id.updTitle).text = getString(R.string.update_ready)
+        view.findViewById<TextView>(R.id.updVersions).text = getString(R.string.update_versions, current, tag.removePrefix("v"))
+        view.findViewById<TextView>(R.id.updMsg).text = getString(R.string.update_msg)
+        val lines = notes.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
+            .map { if (it.startsWith("- ") || it.startsWith("* ")) "•  " + it.substring(2).trim() else it }
+            .map { it.replace("**", "").replace("`", "") }
+        if (lines.isNotEmpty()) {
+            view.findViewById<View>(R.id.updNotesBox).visibility = View.VISIBLE
+            view.findViewById<TextView>(R.id.updNotes).text = lines.joinToString("\n")
+            val scroll = view.findViewById<android.widget.ScrollView>(R.id.updNotesScroll)
+            val max = (resources.displayMetrics.heightPixels * 0.3).toInt()
+            scroll.viewTreeObserver.addOnGlobalLayoutListener {
+                if (scroll.height > max) scroll.layoutParams = scroll.layoutParams.apply { height = max }
             }
-            .setNeutralButton(R.string.update_later) { d, _ -> d.dismiss() }
-            .setNegativeButton(R.string.update_skip) { _, _ ->
-                updatePrefs.edit().putString("skipped", tag).apply()
-            }
-            .show()
+        }
+        val dialog = android.app.Dialog(this)
+        dialog.setContentView(view)
+        dialog.window?.let { w ->
+            val inset = (16 * resources.displayMetrics.density).toInt()
+            w.setBackgroundDrawable(
+                android.graphics.drawable.InsetDrawable(
+                    android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT), inset
+                )
+            )
+            w.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        view.findViewById<View>(R.id.updNow).setOnClickListener {
+            dialog.dismiss()
+            if (apkUrl.isNotEmpty()) startUpdate(apkUrl)
+            else openExternal(if (page.isNotEmpty()) page else "https://github.com/lonelytragedy/r1999-TrackerApp/releases/latest")
+        }
+        view.findViewById<View>(R.id.updLater).setOnClickListener { dialog.dismiss() }
+        view.findViewById<View>(R.id.updSkip).setOnClickListener {
+            updatePrefs.edit().putString("skipped", tag).apply()
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
     private fun startUpdate(url: String) {
@@ -744,7 +734,7 @@ class MainActivity : AppCompatActivity() {
             downloadAndInstall(url)
             return
         }
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle(R.string.update_perm_title)
             .setMessage(R.string.update_perm_msg)
             .setPositiveButton(R.string.update_open_settings) { _, _ -> openInstallSettings() }
@@ -769,7 +759,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPermissionDenied() {
         if (isFinishing || isDestroyed) return
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle(R.string.update_perm_title)
             .setMessage(R.string.update_perm_denied)
             .setPositiveButton(R.string.update_open_settings) { _, _ -> openInstallSettings() }
@@ -781,22 +771,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun downloadAndInstall(url: String) {
-        val bar = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+        val dp = resources.displayMetrics.density
+        val bar = com.google.android.material.progressindicator.LinearProgressIndicator(this).apply {
             max = 100
             isIndeterminate = true
+            trackCornerRadius = (3 * dp).toInt()
+            trackThickness = (6 * dp).toInt()
+            setIndicatorColor(attrColor(R.attr.appAccent))
+            trackColor = attrColor(R.attr.appStroke)
         }
         val label = TextView(this).apply {
-            setPadding(0, 0, 0, 20)
+            setPadding(0, 0, 0, (12 * dp).toInt())
+            setTextColor(attrColor(R.attr.appTextMuted))
             text = getString(R.string.update_connecting)
         }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(56, 40, 56, 12)
+            setPadding((24 * dp).toInt(), (16 * dp).toInt(), (24 * dp).toInt(), (4 * dp).toInt())
             addView(label)
             addView(bar)
         }
         val cancelled = java.util.concurrent.atomic.AtomicBoolean(false)
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle(R.string.update_downloading)
             .setView(box)
             .setCancelable(false)
@@ -832,8 +828,12 @@ class MainActivity : AppCompatActivity() {
                                     lastPct = pct
                                     val done = "%.1f".format(sum / 1048576.0)
                                     runOnUiThread {
-                                        bar.isIndeterminate = false
-                                        bar.progress = pct
+                                        if (bar.isIndeterminate) {
+                                            bar.visibility = View.INVISIBLE
+                                            bar.isIndeterminate = false
+                                            bar.visibility = View.VISIBLE
+                                        }
+                                        bar.setProgressCompat(pct, true)
                                         label.text = getString(R.string.update_progress, done, totalMb, pct)
                                     }
                                 }
@@ -861,7 +861,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showDownloadFailed(url: String, reason: String) {
         if (isFinishing || isDestroyed) return
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle(R.string.update_failed_title)
             .setMessage(getString(R.string.update_failed, reason))
             .setPositiveButton(R.string.update_retry) { _, _ -> downloadAndInstall(url) }
@@ -939,6 +939,18 @@ class MainActivity : AppCompatActivity() {
                 currentSection = id
                 if (trackerView.visibility == View.VISIBLE) selectNav(id)
             }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun getReminders(): String =
+            JSONObject()
+                .put("start", BannerScheduler.remindNew(this@MainActivity))
+                .put("end", BannerScheduler.remindEnd(this@MainActivity))
+                .toString()
+
+        @android.webkit.JavascriptInterface
+        fun setReminders(start: Boolean, end: Boolean) {
+            BannerScheduler.setReminders(this@MainActivity, start, end)
         }
 
         @android.webkit.JavascriptInterface

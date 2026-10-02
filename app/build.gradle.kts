@@ -13,8 +13,8 @@ android {
         applicationId = "com.lonelytragedy.r1999trackerapp"
         minSdk = 26
         targetSdk = 34
-        versionCode = 17
-        versionName = "1.17"
+        versionCode = 18
+        versionName = "1.18"
 
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
@@ -72,4 +72,7 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("com.google.android.material:material:1.12.0")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.javascriptengine:javascriptengine:1.0.0-beta01")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.7.3")
 }

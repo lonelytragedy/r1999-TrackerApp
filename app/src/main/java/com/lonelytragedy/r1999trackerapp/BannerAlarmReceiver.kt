@@ -11,9 +11,12 @@ import android.content.Intent
 class BannerAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(ctx: Context, intent: Intent) {
-        val text = intent.getStringExtra("text") ?: return
-        val title = intent.getStringExtra("title") ?: ctx.getString(R.string.banner_notif_title)
-        val key = intent.getStringExtra("key")
+        val kind = intent.getStringExtra("kind") ?: return
+        val at = intent.getLongExtra("at", 0L)
+        if (at <= 0L) return
+        BannerScheduler.markNotified(ctx, kind, at)
+        if (System.currentTimeMillis() - at > 6 * 3600_000L) return
+        val (title, text) = BannerScheduler.eventText(ctx, kind, at) ?: return
 
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(
@@ -38,11 +41,6 @@ class BannerAlarmReceiver : BroadcastReceiver() {
             .setAutoCancel(true)
             .setContentIntent(open)
             .build()
-        nm.notify(("banner_$key").hashCode(), n)
-
-        val prefs = ctx.getSharedPreferences("banners", Context.MODE_PRIVATE)
-        val set = HashSet(prefs.getStringSet("notified", emptySet()) ?: emptySet())
-        if (key != null) set.add(key)
-        prefs.edit().putStringSet("notified", set).apply()
+        nm.notify("banner_$kind:$at".hashCode(), n)
     }
 }
