@@ -260,7 +260,7 @@ class Tun2HttpVpnService : VpnService() {
     }
 
     private fun armedNotification(): Notification {
-        return baseBuilder(getString(R.string.notif_armed), android.R.drawable.ic_popup_sync)
+        return baseBuilder(getString(R.string.notif_armed), R.drawable.ic_notif_armed)
             .setOngoing(true)
             .addAction(android.R.drawable.ic_media_play, getString(R.string.action_start_vpn), serviceIntent(ACTION_ENABLE, 1))
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.action_cancel), serviceIntent(ACTION_STOP, 2))
@@ -268,7 +268,7 @@ class Tun2HttpVpnService : VpnService() {
     }
 
     private fun capturingNotification(): Notification {
-        return baseBuilder(getString(R.string.notif_capturing), android.R.drawable.stat_sys_download)
+        return baseBuilder(getString(R.string.notif_capturing), R.drawable.ic_notif_capturing)
             .setOngoing(true)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.action_stop), serviceIntent(ACTION_STOP, 2))
             .build()
@@ -278,7 +278,7 @@ class Tun2HttpVpnService : VpnService() {
         return Notification.Builder(this, CHANNEL_FOUND)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.notif_found))
-            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setSmallIcon(R.drawable.ic_notif_found)
             .setAutoCancel(true)
             .setContentIntent(openAppIntent(3, importLink = true))
             .build()

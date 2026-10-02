@@ -26,5 +26,5 @@ original package names so the engine's JNI symbols resolve.
 ## Lucide icons
 
 The navigation and screen icons in `app/src/main/res/drawable/ic_nav_*.xml`,
-`ic_play.xml` and `ic_chevron.xml` are converted from Lucide
+`ic_play.xml`, `ic_chevron.xml`, `ic_widget_clock.xml` and `ic_notif_*.xml` are converted from Lucide
 (https://lucide.dev), ISC License. See `LICENSE-lucide.txt`.

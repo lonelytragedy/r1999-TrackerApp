@@ -34,7 +34,7 @@ class BannerAlarmReceiver : BroadcastReceiver() {
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notif_banner)
             .setAutoCancel(true)
             .setContentIntent(open)
             .build()

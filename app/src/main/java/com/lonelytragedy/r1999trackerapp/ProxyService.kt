@@ -91,7 +91,7 @@ class ProxyService : Service() {
         return builder
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
-            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setSmallIcon(R.drawable.ic_notif_capturing)
             .setOngoing(true)
             .build()
     }
