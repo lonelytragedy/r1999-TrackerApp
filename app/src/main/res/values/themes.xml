@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.R1999TrackerApp" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="appBgPage">@color/warm_bg_page</item>
         <item name="appBgSurface">@color/warm_bg_surface</item>
@@ -14,6 +14,9 @@
         <item name="colorOnPrimary">#1A1109</item>
         <item name="android:windowBackground">?attr/appBgPage</item>
         <item name="android:statusBarColor">?attr/appBgPage</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/warm_bg_page</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/splash_mark</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@color/warm_bg_page</item>
         <item name="alertDialogTheme">@style/AppDialog</item>
         <item name="materialAlertDialogTheme">@style/AppDialog</item>
     </style>
