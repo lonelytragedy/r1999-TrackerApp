@@ -41,6 +41,20 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/widgetTitleSans"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="7dp"
+            android:fontFamily="sans-serif"
+            android:singleLine="true"
+            android:text="@string/app_name"
+            android:textColor="@color/widget_cool_name"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/widgetResetLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

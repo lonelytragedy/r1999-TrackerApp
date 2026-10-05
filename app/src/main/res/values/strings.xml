@@ -90,4 +90,5 @@
     <string name="update_whats_new">What\'s new</string>
     <string name="banner_end_title">Banner ends in 24 hours</string>
     <string name="banner_end_title_multi">Banners end in 24 hours</string>
+    <string name="stop_capture">Stop capture</string>
 </resources>

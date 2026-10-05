@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusDot: View
     private lateinit var statusTitle: TextView
     private lateinit var status: TextView
-    private lateinit var stopBtn: View
+    private lateinit var gameBtn: TextView
     private lateinit var primaryBtn: TextView
     private lateinit var linkCard: View
     private lateinit var urlView: TextView
@@ -136,6 +136,7 @@ class MainActivity : AppCompatActivity() {
         Bus.attachUi(this)
 
         bindViews()
+        applySkinFonts()
         setupWebView()
         setupTabs()
         setupGrabber()
@@ -222,7 +223,7 @@ class MainActivity : AppCompatActivity() {
         statusDot = findViewById(R.id.statusDot)
         statusTitle = findViewById(R.id.statusTitle)
         status = findViewById(R.id.status)
-        stopBtn = findViewById(R.id.stopBtn)
+        gameBtn = findViewById(R.id.gameBtn)
         primaryBtn = findViewById(R.id.primaryBtn)
         linkCard = findViewById(R.id.linkCard)
         urlView = findViewById(R.id.urlView)
@@ -383,7 +384,7 @@ class MainActivity : AppCompatActivity() {
         pageErrored = false
         webOverlay.visibility = View.VISIBLE
         webProgress.visibility = View.VISIBLE
-        webTitle.text = getString(R.string.web_loading)
+        webTitle.visibility = View.GONE
         webMsg.visibility = View.GONE
         webRetry.visibility = View.GONE
     }
@@ -392,6 +393,7 @@ class MainActivity : AppCompatActivity() {
         pageErrored = true
         webOverlay.visibility = View.VISIBLE
         webProgress.visibility = View.GONE
+        webTitle.visibility = View.VISIBLE
         webTitle.text = getString(R.string.web_offline_title)
         webMsg.text = getString(R.string.web_offline_msg)
         webMsg.visibility = View.VISIBLE
@@ -407,7 +409,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupGrabber() {
         primaryBtn.setOnClickListener { onPrimary() }
-        stopBtn.setOnClickListener { stopCapture() }
+        gameBtn.setOnClickListener { launchGame() }
         copyBtn.setOnClickListener { copyLink() }
         openBtn.setOnClickListener { importIntoTracker() }
         clearBtn.setOnClickListener { Bus.clear() }
@@ -424,7 +426,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun onPrimary() {
         when {
-            capturing() -> launchGame()
+            capturing() -> stopCapture()
             useVpn -> toggleVpn()
             else -> toggle()
         }
@@ -447,6 +449,19 @@ class MainActivity : AppCompatActivity() {
     private fun updateLog() {
         logView.text = Bus.snapshot()
         logTitle.text = getString(R.string.log_count, Bus.log.size)
+    }
+
+    private fun isClassic(): Boolean =
+        getSharedPreferences("app", MODE_PRIVATE).getString("skin", "reversed") == "classic"
+
+    private fun titleTypeface(): android.graphics.Typeface =
+        android.graphics.Typeface.create(if (isClassic()) "sans-serif" else "serif", android.graphics.Typeface.BOLD)
+
+    private fun applySkinFonts() {
+        findViewById<TextView>(R.id.grabberTitle).typeface = titleTypeface()
+        val play = ContextCompat.getDrawable(this, R.drawable.ic_play)?.mutate()
+        play?.setTint(attrColor(com.google.android.material.R.attr.colorOnPrimary))
+        gameBtn.setCompoundDrawablesRelativeWithIntrinsicBounds(play, null, null, null)
     }
 
     private fun attrColor(attr: Int): Int {
@@ -528,7 +543,6 @@ class MainActivity : AppCompatActivity() {
             this,
             Intent(this, Tun2HttpVpnService::class.java).setAction(Tun2HttpVpnService.ACTION_ARM)
         )
-        launchGame()
     }
 
     private fun launchGame() {
@@ -573,7 +587,7 @@ class MainActivity : AppCompatActivity() {
         val dot = when {
             running -> attrColor(R.attr.appAccent)
             found -> ContextCompat.getColor(this, R.color.status_ok)
-            else -> ContextCompat.getColor(this, R.color.status_idle)
+            else -> attrColor(R.attr.appTextMuted)
         }
         statusDot.backgroundTintList = android.content.res.ColorStateList.valueOf(dot)
         statusTitle.setText(
@@ -590,12 +604,12 @@ class MainActivity : AppCompatActivity() {
                 else -> R.string.status_off_sub
             }
         )
-        stopBtn.visibility = if (running) View.VISIBLE else View.GONE
-
-        primaryBtn.setText(if (running) R.string.open_game else R.string.start_capture)
-        val play = if (running) ContextCompat.getDrawable(this, R.drawable.ic_play)?.mutate() else null
-        play?.setTint(attrColor(com.google.android.material.R.attr.colorOnPrimary))
-        primaryBtn.setCompoundDrawablesRelativeWithIntrinsicBounds(play, null, null, null)
+        primaryBtn.setText(if (running) R.string.stop_capture else R.string.start_capture)
+        primaryBtn.setBackgroundResource(if (running) R.drawable.bg_outline else R.drawable.bg_primary)
+        primaryBtn.setTextColor(
+            attrColor(if (running) R.attr.appTextPrimary else com.google.android.material.R.attr.colorOnPrimary)
+        )
+        gameBtn.visibility = if (running) View.VISIBLE else View.GONE
 
         linkCard.visibility = if (url != null) View.VISIBLE else View.GONE
         urlView.text = url ?: ""
@@ -689,7 +703,10 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed) return
         val view = layoutInflater.inflate(R.layout.dialog_update, null)
         val current = packageManager.getPackageInfo(packageName, 0).versionName ?: ""
-        view.findViewById<TextView>(R.id.updTitle).text = getString(R.string.update_ready)
+        view.findViewById<TextView>(R.id.updTitle).apply {
+            text = getString(R.string.update_ready)
+            typeface = titleTypeface()
+        }
         view.findViewById<TextView>(R.id.updVersions).text = getString(R.string.update_versions, current, tag.removePrefix("v"))
         view.findViewById<TextView>(R.id.updMsg).text = getString(R.string.update_msg)
         val lines = notes.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }

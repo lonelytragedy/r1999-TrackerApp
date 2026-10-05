@@ -36,6 +36,14 @@
         <item name="buttonBarNeutralButtonStyle">@style/AppDialog.Button.Muted</item>
     </style>
 
+    <style name="AppDialog.Classic">
+        <item name="materialAlertDialogTitleTextStyle">@style/AppDialog.Title.Classic</item>
+    </style>
+
+    <style name="AppDialog.Title.Classic">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
     <style name="AppDialog.Shape" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">24dp</item>
@@ -69,6 +77,8 @@
         <item name="appNavBg">@color/cool_nav_bg</item>
         <item name="colorPrimary">@color/cool_accent</item>
         <item name="colorOnPrimary">#0B0E24</item>
+        <item name="alertDialogTheme">@style/AppDialog.Classic</item>
+        <item name="materialAlertDialogTheme">@style/AppDialog.Classic</item>
     </style>
 
     <style name="NavLabel" parent="TextAppearance.Material3.LabelSmall">

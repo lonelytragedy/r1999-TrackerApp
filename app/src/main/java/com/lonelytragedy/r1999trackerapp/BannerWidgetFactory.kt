@@ -99,7 +99,10 @@ class BannerWidgetFactory(private val ctx: Context, intent: Intent) : RemoteView
         rv.setTextViewText(R.id.itemType, row.type)
         rv.setTextColor(R.id.itemType, ContextCompat.getColor(ctx, typeColor(row.type)))
         rv.setTextViewText(R.id.itemName, row.name)
-        rv.setTextColor(R.id.itemName, color(if (classic) R.color.widget_cool_name else R.color.widget_name))
+        rv.setTextViewText(R.id.itemNameSans, row.name)
+        rv.setTextColor(R.id.itemName, color(R.color.widget_name))
+        rv.setViewVisibility(R.id.itemName, if (classic) View.GONE else View.VISIBLE)
+        rv.setViewVisibility(R.id.itemNameSans, if (classic) View.VISIBLE else View.GONE)
 
         if (row.rate.isEmpty()) {
             rv.setViewVisibility(R.id.itemRate, View.GONE)

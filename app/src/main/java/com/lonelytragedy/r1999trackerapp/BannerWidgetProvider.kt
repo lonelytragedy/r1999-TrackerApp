@@ -59,7 +59,8 @@ class BannerWidgetProvider : AppWidgetProvider() {
             val c = { res: Int -> androidx.core.content.ContextCompat.getColor(ctx, res) }
             rv.setInt(R.id.widgetRoot, "setBackgroundResource", if (classic) R.drawable.widget_bg_classic else R.drawable.widget_bg)
             rv.setImageViewResource(R.id.widgetDivider, if (classic) R.drawable.widget_divider_classic else R.drawable.widget_divider)
-            rv.setTextColor(R.id.widgetTitle, c(if (classic) R.color.widget_cool_name else R.color.widget_wordmark))
+            rv.setViewVisibility(R.id.widgetTitle, if (classic) android.view.View.GONE else android.view.View.VISIBLE)
+            rv.setViewVisibility(R.id.widgetTitleSans, if (classic) android.view.View.VISIBLE else android.view.View.GONE)
             rv.setInt(R.id.widgetDiamond, "setColorFilter", c(if (classic) R.color.widget_cool_accent else R.color.widget_gold))
             rv.setTextColor(R.id.widgetResetLabel, c(if (classic) R.color.widget_cool_muted else R.color.widget_muted))
             rv.setTextColor(R.id.resetTimer, c(if (classic) R.color.widget_cool_name else R.color.widget_name))
